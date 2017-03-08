@@ -25,7 +25,7 @@
 #include <CoreWindow.h>
 
 #include "Sprite.h"
-
+#include "MainWorld.h"
 
 using namespace glm;
 
@@ -94,7 +94,7 @@ int createWin(int w, int h, SDL_Window* &win)
 	return 0;
 }
 
-void input(vec3 &colourValueGLMVector,bool &running, bool &Applytexture, bool &ApplyRotate)
+void input(MainWorld* world,vec3 &colourValueGLMVector,bool &running)
 {
 	SDL_Event e;
 	while (SDL_PollEvent(&e))
@@ -112,44 +112,44 @@ void input(vec3 &colourValueGLMVector,bool &running, bool &Applytexture, bool &A
 					running = false;
 					break;
 				case SDL_SCANCODE_C:
-					if (Applytexture == false)
+					if (world->Applytexture == false)
 					{
 						colourValueGLMVector = vec3(0.20f, 0.29f, 0.33f);
-						Applytexture = true;
+						world->Applytexture = true;
 					}
 					else
 					{
 						colourValueGLMVector = vec3(0.255f, 0.64f, 0.100f);
-						Applytexture = false;
+						world->Applytexture = false;
 					}
 					break;
 
 				case SDL_SCANCODE_W:
-					//movement = movementInput::Up;
+					world->player.direction = movementInput::Up;
 					break;
 
 				case SDL_SCANCODE_A:
-				//	movement = movementInput::Left;
+					world->player.direction = movementInput::Left;
 					break;
 
 				case SDL_SCANCODE_S:
-				//	movement = movementInput::Down;
+					world->player.direction = movementInput::Down;
 					break;
 
 				case SDL_SCANCODE_D:
-				//	movement = movementInput::Right;
+					world->player.direction = movementInput::Right;
 					break;
 
 				case SDL_SCANCODE_0:
-					if (ApplyRotate == false)
+					if (world->ApplyRotate == false)
 					{
 
-						ApplyRotate = true;
+						world->ApplyRotate = true;
 					}
 					else
 					{
 
-						ApplyRotate = false;
+						world->ApplyRotate = false;
 					}
 
 					break;
@@ -160,7 +160,7 @@ void input(vec3 &colourValueGLMVector,bool &running, bool &Applytexture, bool &A
 			break;
 
 		case SDL_KEYUP:
-			//movement = movementInput::None;
+			world->player.direction = movementInput::None;
 			break;
 		}
 
@@ -445,11 +445,13 @@ int main(int argc, char *argv[]) {
 #pragma endregion
 
 
+  MainWorld* world = new MainWorld();
+
   //GLuint texture; 
   //loadSurface("assets\\wall2.png", texture);
   
-  Sprite* player = new Sprite();
-  player->loadTexture("assets\\wall2.png");
+ world->player = Sprite();
+  world->player.loadTexture("assets\\wall2.png");
 
   
 
@@ -457,70 +459,92 @@ int main(int argc, char *argv[]) {
   
 
   SDL_Log("Game Loop Started");
-  bool Applytexture;
-  bool ApplyRotate;
+
   bool running = true;
 
+
+  chrono::milliseconds skipTicks(1000 / 120);
+
+  chrono::high_resolution_clock::time_point next_Game_Tick = chrono::high_resolution_clock::now();
+
+  chrono::duration<double> lastdt = chrono::milliseconds(0);
   while (running == true)
   {
 	 
-	 
+	  chrono::high_resolution_clock::time_point t = chrono::high_resolution_clock::now();
 	
 	  //input
-	  input(colourValueGLMVector,running, Applytexture, ApplyRotate);
+	  input(world,colourValueGLMVector,running);
 
 	  //updating 
 	  update();
-
-	  //rendering
-
-	#pragma region testrendering
-	  // pre-render	
-	  glClearColor(colourValueGLMVector.r, colourValueGLMVector.g, colourValueGLMVector.b, 1.0f);
-	  glClear(GL_COLOR_BUFFER_BIT);
-
-	  // render
-	  glUseProgram(shaderProgram);
-	  glBindVertexArray(VAO);
-	  //  glDrawArrays(GL_TRIANGLES, 0, 3);
-	  //  glBindBuffer(GL_ARRAY_BUFFER, colourBuffer);
-
-	  //if(Applytexture == true)
-	  glBindTexture(GL_TEXTURE_2D, player->texture);//binds texture
-
-
-
-											//set up the rotation transformation matrix
-	  if (ApplyRotate == true)
-		  player->_transRotate = glm::rotate(player->_transRotate, glm::radians(0.1f), glm::vec3(0.0f, 0.0f, 1.0f));
-
-
-
-	  if (player->direction == movementInput::Up)
+	  if (chrono::high_resolution_clock::now() > next_Game_Tick)
 	  {
-		  player->_transTranslate = glm::translate(player->_transTranslate, glm::vec3(0.0f, 0.05f, 0.0f));
+		  //rendering
+		 // render();
+
+
+#pragma region testrendering
+  // pre-render	
+		  glClearColor(colourValueGLMVector.r, colourValueGLMVector.g, colourValueGLMVector.b, 1.0f);
+		  glClear(GL_COLOR_BUFFER_BIT);
+
+		  // render
+		  glUseProgram(shaderProgram);
+		  glBindVertexArray(VAO);
+		  //  glDrawArrays(GL_TRIANGLES, 0, 3);
+		  //  glBindBuffer(GL_ARRAY_BUFFER, colourBuffer);
+
+		  //if(Applytexture == true)
+		  glBindTexture(GL_TEXTURE_2D, world->player.texture);//binds texture
+
+
+
+												//set up the rotation transformation matrix
+		  if (world->ApplyRotate == true)
+			  world->player._transRotate = glm::rotate(world->player._transRotate, glm::radians(0.1f), glm::vec3(0.0f, 0.0f, 1.0f));
+
+
+
+		  if (world->player.direction == movementInput::Up)
+		  {
+			  world->player._transTranslate = glm::translate(world->player._transTranslate, glm::vec3(0.0f, 0.05f, 0.0f));
+		  }
+		  else if (world->player.direction == movementInput::Down)
+		  {
+			  world->player._transTranslate = glm::translate(world->player._transTranslate, glm::vec3(0.0f, -0.05f, 0.0f));
+
+		  }
+
+
+		  //get the matrix
+		  //gets the value of the 'trans' uniform from the vertex shader
+		  GLint transLocation = glGetUniformLocation(shaderProgram, "trans");
+		  //set the transform in shader
+
+		  //multiply matrices together to get final transform
+		  glUniformMatrix4fv(transLocation, 1, GL_FALSE, glm::value_ptr(world->player._transTranslate*world->player._transRotate*world->player._transScale));
+
+		  glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, EBO);
+		  glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
+
+		  glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
+		  glBindVertexArray(0);
+
+		  // post-render
+		  SDL_GL_SwapWindow(win);
+#pragma endregion
+
+
+		  next_Game_Tick += skipTicks;
 	  }
 
 
-	  //get the matrix
-	  //gets the value of the 'trans' uniform from the vertex shader
-	  GLint transLocation = glGetUniformLocation(shaderProgram, "trans");
-	  //set the transform in shader
+	  chrono::high_resolution_clock::time_point dt = chrono::high_resolution_clock::now();
+	  lastdt = chrono::duration_cast<chrono::duration<double>>(dt - t);
 
-	  //multiply matrices together to get final transform
-	  glUniformMatrix4fv(transLocation, 1, GL_FALSE, glm::value_ptr(player->_transTranslate*player->_transRotate*player->_transScale));
 
-	  glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, EBO);
-	  glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
 
-	  glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
-	  glBindVertexArray(0);
-
-	  // post-render
-	  SDL_GL_SwapWindow(win);
-#pragma endregion
-
-	
   }
   // Exit Game loop
 
