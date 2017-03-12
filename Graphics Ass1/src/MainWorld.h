@@ -19,7 +19,7 @@ public:
 
 	
 	MainWorld();
-
+	void setUpEnermies(int ammount);
 
 	~MainWorld();
 

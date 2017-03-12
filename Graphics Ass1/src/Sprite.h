@@ -25,6 +25,8 @@ class Sprite
 
 public:
 	Sprite();
+	
+
 	void loadTexture(string file);
 	~Sprite();
 	
@@ -33,10 +35,10 @@ public:
 
 	
 
-	//declare the transform matrix once
-	glm::mat4 _transRotate;
-	glm::mat4 _transTranslate;
-	glm::mat4 _transScale;
+	
+	glm::mat4 modelMatrix;
+	glm::mat4 rotationMatrix;
+#
 
 
 	movementInput direction = movementInput::None;

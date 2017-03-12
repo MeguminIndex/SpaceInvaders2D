@@ -299,13 +299,21 @@ int main(int argc, char *argv[]) {
 	  0.5f,  0.5f, 0.0f,   1.0f, 0.0f, 0.0f,   1.0f, 1.0f, // Top Right
 	  0.5f, -0.5f, 0.0f,   0.0f, 1.0f, 0.0f,   1.0f, 0.0f, // Bottom Right
 	  -0.5f, -0.5f, 0.0f,   0.0f, 0.0f, 1.0f,   0.0f, 0.0f, // Bottom Left
+	  -0.5f,  0.5f, 0.0f,   1.0f, 1.0f, 0.0f,   0.0f, 1.0f,  // Top Left 
+
+
+	  0.5f,  0.5f, 0.0f,   1.0f, 0.0f, 0.0f,   1.0f, 1.0f, // Top Right
+	  0.5f, -0.5f, 0.0f,   0.0f, 1.0f, 0.0f,   1.0f, 0.0f, // Bottom Right
+	  -0.5f, -0.5f, 0.0f,   0.0f, 0.0f, 1.0f,   0.0f, 0.0f, // Bottom Left
 	  -0.5f,  0.5f, 0.0f,   1.0f, 1.0f, 0.0f,   0.0f, 1.0f  // Top Left 
   };
 
 
   GLuint indices[] = {  // Note that we start from 0!
 	  0, 1, 3, // First Triangle
-	  1, 2, 3  // Second Triangle
+	  1, 2, 3,  // Second Triangle
+	  4,5,6,
+	  5,6,7
   };
 
 #pragma region GLBuffers/Shaders ect..
@@ -319,11 +327,12 @@ int main(int argc, char *argv[]) {
 		out vec3 ourColor;
 		out vec2 TexCoord;
 		
-		uniform mat4 trans;
-
+		uniform mat4 modelMat;
+		uniform mat4 viewMat;
+		uniform mat4 projectionMat;
 		void main()
 		{
-			gl_Position = trans * vec4(position.x, position.y, position.z, 1.0);
+			gl_Position = projectionMat * viewMat * modelMat * vec4(position.x, position.y, position.z, 1.0);
 			ourColor = color;
 			TexCoord = vec2(texCoord.x, 1.0f - texCoord.y);
 		}
@@ -453,10 +462,21 @@ int main(int argc, char *argv[]) {
  world->player = Sprite();
   world->player.loadTexture("assets\\wall2.png");
 
-  
+  world->enermieSp.push_back(Sprite());
+
+  world->enermieSp[0].loadTexture("assets\\enermy.png");
 
 
+  glm::mat4 viewMatrix;
+
+  glm::mat4 projectionMatrix;
+
   
+  SDL_GetWindowSize(win, &width, &height);
+
+  //left, right, bottom, top, near clip plane, far clip plane
+  projectionMatrix = glm::ortho(0.0f, 4.0f, 0.0f, 3.0f, -1.0f, 100.0f);
+
 
   SDL_Log("Game Loop Started");
 
@@ -478,6 +498,7 @@ int main(int argc, char *argv[]) {
 
 	  //updating 
 	  update();
+
 	  if (chrono::high_resolution_clock::now() > next_Game_Tick)
 	  {
 		  //rendering
@@ -487,46 +508,58 @@ int main(int argc, char *argv[]) {
 #pragma region testrendering
   // pre-render	
 		  glClearColor(colourValueGLMVector.r, colourValueGLMVector.g, colourValueGLMVector.b, 1.0f);
-		  glClear(GL_COLOR_BUFFER_BIT);
+		  glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
 		  // render
 		  glUseProgram(shaderProgram);
 		  glBindVertexArray(VAO);
-		  //  glDrawArrays(GL_TRIANGLES, 0, 3);
-		  //  glBindBuffer(GL_ARRAY_BUFFER, colourBuffer);
-
-		  //if(Applytexture == true)
+		
 		  glBindTexture(GL_TEXTURE_2D, world->player.texture);//binds texture
 
 
 
 												//set up the rotation transformation matrix
 		  if (world->ApplyRotate == true)
-			  world->player._transRotate = glm::rotate(world->player._transRotate, glm::radians(0.1f), glm::vec3(0.0f, 0.0f, 1.0f));
+			  world->player.rotationMatrix = glm::rotate(world->player.rotationMatrix, glm::radians(0.1f), glm::vec3(0.0f, 0.0f, 1.0f));
 
 
 
 		  if (world->player.direction == movementInput::Up)
 		  {
-			  world->player._transTranslate = glm::translate(world->player._transTranslate, glm::vec3(0.0f, 0.05f, 0.0f));
+			  world->player.modelMatrix = glm::translate(world->player.modelMatrix, glm::vec3(0.0f, 0.05f, 0.0f));
 		  }
 		  else if (world->player.direction == movementInput::Down)
 		  {
-			  world->player._transTranslate = glm::translate(world->player._transTranslate, glm::vec3(0.0f, -0.05f, 0.0f));
+			  world->player.modelMatrix = glm::translate(world->player.modelMatrix, glm::vec3(0.0f, -0.05f, 0.0f));
 
 		  }
 
 
-		  //get the matrix
-		  //gets the value of the 'trans' uniform from the vertex shader
-		  GLint transLocation = glGetUniformLocation(shaderProgram, "trans");
-		  //set the transform in shader
+		 
+		  GLint viewLocation = glGetUniformLocation(shaderProgram, "viewMat");
+		  GLint projectionLocation = glGetUniformLocation(shaderProgram, "projectionMat");
+		  //set the uniforms in the shader
 
-		  //multiply matrices together to get final transform
-		  glUniformMatrix4fv(transLocation, 1, GL_FALSE, glm::value_ptr(world->player._transTranslate*world->player._transRotate*world->player._transScale));
+		  
+		  glUniformMatrix4fv(viewLocation, 1, GL_FALSE, glm::value_ptr(viewMatrix));
+		  glUniformMatrix4fv(projectionLocation, 1, GL_FALSE, glm::value_ptr(projectionMatrix));
+
+		  
+		  GLint modelLocation = glGetUniformLocation(shaderProgram, "modelMat");
+
+		  glUniformMatrix4fv(modelLocation, 1, GL_FALSE, glm::value_ptr(world->player.modelMatrix*world->player.rotationMatrix));
 
 		  glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, EBO);
 		  glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
+
+
+
+		  glBindTexture(GL_TEXTURE_2D, world->enermieSp[0].texture);//binds texture
+		  GLint modelLocation2 = glGetUniformLocation(shaderProgram, "modelMat");
+
+		  glUniformMatrix4fv(modelLocation2, 1, GL_FALSE, glm::value_ptr(world->enermieSp[0].modelMatrix*world->enermieSp[0].rotationMatrix));
+		  glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
+
 
 		  glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
 		  glBindVertexArray(0);

@@ -15,7 +15,12 @@ MainWorld::MainWorld()
 
 }
 
+void MainWorld::setUpEnermies(int ammount)
+{
+	
 
+
+}
 
 MainWorld::~MainWorld()
 {
