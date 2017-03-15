@@ -26,7 +26,7 @@
 
 #include "Sprite.h"
 #include "MainWorld.h"
-
+#include "PersistantData.h"
 using namespace glm;
 
 using namespace std;
@@ -94,7 +94,7 @@ int createWin(int w, int h, SDL_Window* &win)
 	return 0;
 }
 
-void input(MainWorld* world,vec3 &colourValueGLMVector,bool &running)
+void input(MainWorld* &world,PersistantData* &persData,vec3 &colourValueGLMVector,bool &running)
 {
 	SDL_Event e;
 	while (SDL_PollEvent(&e))
@@ -102,7 +102,21 @@ void input(MainWorld* world,vec3 &colourValueGLMVector,bool &running)
 
 		switch (e.type)
 		{
+		case SDL_WINDOWEVENT:
+		{
+			switch (e.window.event)
+			{
+			case SDL_WINDOWEVENT_RESIZED:
+				SDL_LogDebug(SDL_LOG_CATEGORY_SYSTEM, "Window Resized");
+				persData->windowResized = true;
+				break;
 
+
+			default:
+				break;
+			}
+
+		}
 		case SDL_KEYDOWN:
 			if (!e.key.repeat)
 			{
@@ -162,6 +176,9 @@ void input(MainWorld* world,vec3 &colourValueGLMVector,bool &running)
 		case SDL_KEYUP:
 			world->player.direction = movementInput::None;
 			break;
+
+
+
 		}
 
 
@@ -175,19 +192,103 @@ void input(MainWorld* world,vec3 &colourValueGLMVector,bool &running)
 
 	}
 }
-void render(GLuint &VBO,GLfloat* vertices)
+void render(GLuint VAO, GLuint EBO,MainWorld* world,PersistantData* persData, vec3 &colourValueGLMVector, GLuint shaderProgram, mat4 viewMatrix, mat4 projectionMatrix)
 {
 
+#pragma region testrendering
+	// pre-render	
+	
+	
+	glClearColor(colourValueGLMVector.r, colourValueGLMVector.g, colourValueGLMVector.b, 1.0f);
+	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+
+	// render
+	glUseProgram(shaderProgram);
+	glBindVertexArray(VAO);
+
+	glBindTexture(GL_TEXTURE_2D, persData->playerTexture);//binds texture
+
+
+
+														  //set up the rotation transformation matrix
+	if (world->ApplyRotate == true)
+		world->player.rotationMatrix = glm::rotate(world->player.rotationMatrix, glm::radians(0.1f), glm::vec3(0.0f, 0.0f, 1.0f));
+
+
+
+	if (world->player.direction == movementInput::Up)
+	{
+		world->player.modelMatrix = glm::translate(world->player.modelMatrix, glm::vec3(0.0f, 0.05f, 0.0f));
+	}
+	else if (world->player.direction == movementInput::Down)
+	{
+		world->player.modelMatrix = glm::translate(world->player.modelMatrix, glm::vec3(0.0f, -0.05f, 0.0f));
+
+	}
+
+
+
+	GLint viewLocation = glGetUniformLocation(shaderProgram, "viewMat");
+	GLint projectionLocation = glGetUniformLocation(shaderProgram, "projectionMat");
+	//set the uniforms in the shader
+
+
+	glUniformMatrix4fv(viewLocation, 1, GL_FALSE, glm::value_ptr(viewMatrix));
+	glUniformMatrix4fv(projectionLocation, 1, GL_FALSE, glm::value_ptr(projectionMatrix));
+
+
+	GLint modelLocation = glGetUniformLocation(shaderProgram, "modelMat");
+
+	glUniformMatrix4fv(modelLocation, 1, GL_FALSE, glm::value_ptr(world->player.modelMatrix*world->player.rotationMatrix));
+
+	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, EBO);
+	glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
+
+
 
 	
 	
+	
+#pragma endregion
+
+
+
+	for (const auto &enermy : world->enermieSp)
+	{
+
+
+		glBindTexture(GL_TEXTURE_2D, persData->enermieTexture);//binds texture
+		GLint modelLocation2 = glGetUniformLocation(shaderProgram, "modelMat");
+
+		glUniformMatrix4fv(modelLocation2, 1, GL_FALSE, glm::value_ptr(enermy.modelMatrix*enermy.rotationMatrix));
+		glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
+
+
+		
+
+
+
+	}
+	
+	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
+	glBindVertexArray(0);
+
+
+	// post-render
+	SDL_GL_SwapWindow(persData->window);
 
 	
 }
 
-void update()
+void update(MainWorld* &world, PersistantData* &persData)
 {
-
+	if (persData->windowResized == true)
+	{
+		int w, h;
+		SDL_GL_GetDrawableSize(persData->window,&w,&h);
+		glViewport(0, 0, w, h);
+		persData->windowResized = false;
+	}
 }
 
 int initialise(SDL_Window *win,SDL_GLContext &glcontext, GLint width, GLint height)
@@ -255,6 +356,7 @@ int initialise(SDL_Window *win,SDL_GLContext &glcontext, GLint width, GLint heig
 
 int main(int argc, char *argv[]) {
 
+	PersistantData* persData = new PersistantData();
 	
 #pragma region initialise
 	// SDL initialise
@@ -267,21 +369,21 @@ int main(int argc, char *argv[]) {
 
 	// Window Creation
 	GLint width = 800, height = 600;
-	SDL_Window *win = nullptr;
+	//SDL_Window *win = nullptr;
 	// win = SDL_CreateWindow("Hello World", 100, 100, 800, 600, 0);
 
-	createWin(width, height, win);
+	createWin(width, height,persData->window);
 
-	if (win == nullptr) {
+	if (persData->window == nullptr) {
 		SDL_LogCritical(SDL_LOG_CATEGORY_APPLICATION,
 			"SDL_CreateWindow init error: %s\n", SDL_GetError());
 		return 1;
 	}
 
 
-	SDL_GLContext glcontext = SDL_GL_CreateContext(win);
+	SDL_GLContext glcontext = SDL_GL_CreateContext(persData->window);
 
-	int code = initialise(win, glcontext, width, height);
+	int code = initialise(persData->window, glcontext, width, height);
 	if (code != 0)
 	{
 		return 1;
@@ -296,10 +398,10 @@ int main(int argc, char *argv[]) {
 
   GLfloat vertices[] = {
 	  // Positions          // Colors           // Texture Coords
-	  0.5f,  0.5f, 0.0f,   1.0f, 0.0f, 0.0f,   1.0f, 1.0f, // Top Right
-	  0.5f, -0.5f, 0.0f,   0.0f, 1.0f, 0.0f,   1.0f, 0.0f, // Bottom Right
-	  -0.5f, -0.5f, 0.0f,   0.0f, 0.0f, 1.0f,   0.0f, 0.0f, // Bottom Left
-	  -0.5f,  0.5f, 0.0f,   1.0f, 1.0f, 0.0f,   0.0f, 1.0f,  // Top Left 
+	  0.0f,  1.0f, 0.0f,   1.0f, 1.0f, 1.0f,   1.0f, 1.0f, // Top Right
+	  0.0f, -0.0f, 0.0f,   1.0f, 1.0f, 1.0f,   1.0f, 0.0f, // Bottom Right
+	  -1.0f, -0.0f, 0.0f,   1.0f, 1.0f, 1.0f,   0.0f, 0.0f, // Bottom Left
+	  -1.0f,  1.0f, 0.0f,   1.0f, 1.0f, 1.0f,   0.0f, 1.0f,  // Top Left 
 
 
 	 
@@ -433,13 +535,6 @@ int main(int argc, char *argv[]) {
   glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(indices), indices, GL_STATIC_DRAW);
 
 
-
-  //// Then set our vertex attributes pointers
-  //glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(GLfloat), (GLvoid*)0);
-  //glEnableVertexAttribArray(0);
-
-
-
   //unbind array buf
   glBindBuffer(GL_ARRAY_BUFFER, 0);
   //unbind element array buff
@@ -449,18 +544,22 @@ int main(int argc, char *argv[]) {
 
 #pragma endregion
 
-
+  
   MainWorld* world = new MainWorld();
 
   //GLuint texture; 
   //loadSurface("assets\\wall2.png", texture);
   
  world->player = Sprite();
-  world->player.loadTexture("assets\\wall2.png");
+  
 
-  world->enermieSp.push_back(Sprite());
+  persData->playerTexture = persData->ReturnTexture("assets\\wall2.png");
 
-  world->enermieSp[0].loadTexture("assets\\enermy.png");
+ // world->enermieSp.push_back(Sprite());
+
+  persData->enermieTexture = persData->ReturnTexture("assets\\enermy.png");
+
+  world->setUpEnermies(4);
 
 
   glm::mat4 viewMatrix;
@@ -468,9 +567,9 @@ int main(int argc, char *argv[]) {
   glm::mat4 projectionMatrix;
 
   
-  SDL_GetWindowSize(win, &width, &height);
+  SDL_GetWindowSize(persData->window, &width, &height);
 
-  //left, right, bottom, top, near clip plane, far clip plane
+	//left, right, bottom, top, near clip plane, far clip plane
   projectionMatrix = glm::ortho(0.0f, 4.0f, 0.0f, 3.0f, -1.0f, 100.0f);
 
 
@@ -490,80 +589,17 @@ int main(int argc, char *argv[]) {
 	  chrono::high_resolution_clock::time_point t = chrono::high_resolution_clock::now();
 	
 	  //input
-	  input(world,colourValueGLMVector,running);
+	  input(world,persData,colourValueGLMVector,running);
 
 	  //updating 
-	  update();
+	  update(world,persData);
 
 	  if (chrono::high_resolution_clock::now() > next_Game_Tick)
 	  {
 		  //rendering
 		 // render();
 
-
-#pragma region testrendering
-  // pre-render	
-		  glClearColor(colourValueGLMVector.r, colourValueGLMVector.g, colourValueGLMVector.b, 1.0f);
-		  glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-
-		  // render
-		  glUseProgram(shaderProgram);
-		  glBindVertexArray(VAO);
-		
-		  glBindTexture(GL_TEXTURE_2D, world->player.texture);//binds texture
-
-
-
-												//set up the rotation transformation matrix
-		  if (world->ApplyRotate == true)
-			  world->player.rotationMatrix = glm::rotate(world->player.rotationMatrix, glm::radians(0.1f), glm::vec3(0.0f, 0.0f, 1.0f));
-
-
-
-		  if (world->player.direction == movementInput::Up)
-		  {
-			  world->player.modelMatrix = glm::translate(world->player.modelMatrix, glm::vec3(0.0f, 0.05f, 0.0f));
-		  }
-		  else if (world->player.direction == movementInput::Down)
-		  {
-			  world->player.modelMatrix = glm::translate(world->player.modelMatrix, glm::vec3(0.0f, -0.05f, 0.0f));
-
-		  }
-
-
-		 
-		  GLint viewLocation = glGetUniformLocation(shaderProgram, "viewMat");
-		  GLint projectionLocation = glGetUniformLocation(shaderProgram, "projectionMat");
-		  //set the uniforms in the shader
-
-		  
-		  glUniformMatrix4fv(viewLocation, 1, GL_FALSE, glm::value_ptr(viewMatrix));
-		  glUniformMatrix4fv(projectionLocation, 1, GL_FALSE, glm::value_ptr(projectionMatrix));
-
-		  
-		  GLint modelLocation = glGetUniformLocation(shaderProgram, "modelMat");
-
-		  glUniformMatrix4fv(modelLocation, 1, GL_FALSE, glm::value_ptr(world->player.modelMatrix*world->player.rotationMatrix));
-
-		  glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, EBO);
-		  glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
-
-
-
-		  glBindTexture(GL_TEXTURE_2D, world->enermieSp[0].texture);//binds texture
-		  GLint modelLocation2 = glGetUniformLocation(shaderProgram, "modelMat");
-
-		  glUniformMatrix4fv(modelLocation2, 1, GL_FALSE, glm::value_ptr(world->enermieSp[0].modelMatrix*world->enermieSp[0].rotationMatrix));
-		  glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
-
-
-		  glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
-		  glBindVertexArray(0);
-
-		  // post-render
-		  SDL_GL_SwapWindow(win);
-#pragma endregion
-
+		  render(VAO,EBO,world,persData,colourValueGLMVector,shaderProgram,viewMatrix,projectionMatrix);
 
 		  next_Game_Tick += skipTicks;
 	  }

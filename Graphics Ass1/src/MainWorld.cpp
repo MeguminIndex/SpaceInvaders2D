@@ -15,9 +15,33 @@ MainWorld::MainWorld()
 
 }
 
-void MainWorld::setUpEnermies(int ammount)
+void MainWorld::setUpEnermies(float entitieSize)
 {
+	float size = 0.2;
+	float x = -1.85- size - -0.05, y= 1.5 - size -0.05;
 	
+	for (float i = y; i > 1;)
+	{
+		for (float j = x; j < 2;)
+		{
+		
+			Sprite tmpSprite;
+			
+			tmpSprite.modelMatrix = glm::translate(tmpSprite.modelMatrix, glm::vec3(j, i, 0.0f));
+			tmpSprite.modelMatrix = glm::scale(tmpSprite.modelMatrix, glm::vec3(size));
+			
+			enermieSp.push_back(tmpSprite);
+
+			j += size + 0.04f;
+		
+		}
+
+		x = -1.85;
+		i -= size +0.04f;
+
+		
+
+	}
 
 
 }

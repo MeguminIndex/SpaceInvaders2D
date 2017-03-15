@@ -30,8 +30,7 @@ public:
 	void loadTexture(string file);
 	~Sprite();
 	
-	//stores pointer to texture
-	GLuint texture;
+	
 
 	
 

@@ -58,21 +58,20 @@ public:
 	SDL_GameController * controller[2];
 
 	//Audio
-	Mix_Music* backingMusic;
-	Mix_Chunk* pointPickUp;
+	//Mix_Music* backingMusic;
+	//Mix_Chunk* pointPickUp;
 
 
 
 	//textures
-	SDL_Texture* wallTex;//stores the texture for all the walls (as they use same texture)
-	SDL_Texture* pointTexture;
-	SDL_Texture* fontTexture;
+	GLuint enermieTexture;
+	GLuint playerTexture;
 
 	
 
 	//window/render
 	SDL_Window *window = nullptr;
-	SDL_Renderer *renderer = nullptr;
+	//SDL_Renderer *renderer = nullptr;
 	
 	void setGameWorldSize(float w,float h);
 
