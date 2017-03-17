@@ -205,26 +205,24 @@ void render(GLuint VAO, GLuint EBO,MainWorld* world,PersistantData* persData, ve
 	// render
 	glUseProgram(shaderProgram);
 	glBindVertexArray(VAO);
+	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, EBO);
 
 	glBindTexture(GL_TEXTURE_2D, persData->playerTexture);//binds texture
 
 
 
 														  //set up the rotation transformation matrix
-	if (world->ApplyRotate == true)
-		world->player.rotationMatrix = glm::rotate(world->player.rotationMatrix, glm::radians(0.1f), glm::vec3(0.0f, 0.0f, 1.0f));
+	
 
 
 
-	if (world->player.direction == movementInput::Up)
-	{
-		world->player.modelMatrix = glm::translate(world->player.modelMatrix, glm::vec3(0.0f, 0.05f, 0.0f));
-	}
-	else if (world->player.direction == movementInput::Down)
-	{
-		world->player.modelMatrix = glm::translate(world->player.modelMatrix, glm::vec3(0.0f, -0.05f, 0.0f));
+	GLint modelLocation = glGetUniformLocation(shaderProgram, "modelMat");
 
-	}
+	glUniformMatrix4fv(modelLocation, 1, GL_FALSE, glm::value_ptr(world->player.modelMatrix*world->player.rotationMatrix));
+
+	
+	glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
+
 
 
 
@@ -236,21 +234,11 @@ void render(GLuint VAO, GLuint EBO,MainWorld* world,PersistantData* persData, ve
 	glUniformMatrix4fv(viewLocation, 1, GL_FALSE, glm::value_ptr(viewMatrix));
 	glUniformMatrix4fv(projectionLocation, 1, GL_FALSE, glm::value_ptr(projectionMatrix));
 
-
-	GLint modelLocation = glGetUniformLocation(shaderProgram, "modelMat");
-
-	glUniformMatrix4fv(modelLocation, 1, GL_FALSE, glm::value_ptr(world->player.modelMatrix*world->player.rotationMatrix));
-
-	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, EBO);
-	glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
-
+	
+	
 
 
 	
-	
-	
-#pragma endregion
-
 
 
 	for (const auto &enermy : world->enermieSp)
@@ -280,7 +268,7 @@ void render(GLuint VAO, GLuint EBO,MainWorld* world,PersistantData* persData, ve
 	
 }
 
-void update(MainWorld* &world, PersistantData* &persData)
+void update(MainWorld* &world, PersistantData* &persData, chrono::duration<double> t)
 {
 	if (persData->windowResized == true)
 	{
@@ -289,6 +277,34 @@ void update(MainWorld* &world, PersistantData* &persData)
 		glViewport(0, 0, w, h);
 		persData->windowResized = false;
 	}
+
+	if (world->ApplyRotate == true)
+		world->player.rotationMatrix = glm::rotate(world->player.rotationMatrix, glm::radians(0.1f), glm::vec3(0.0f, 0.0f, 1.0f));
+
+	float playerMoveSpeed = 0.5* t.count();
+
+
+	if (world->player.direction == movementInput::Up)
+	{
+		world->player.modelMatrix = glm::translate(world->player.modelMatrix, glm::vec3(0.0f, playerMoveSpeed, 0.0f));
+	}
+	else if (world->player.direction == movementInput::Down)
+	{
+		world->player.modelMatrix = glm::translate(world->player.modelMatrix, glm::vec3(0.0f, -playerMoveSpeed, 0.0f));
+
+	}
+	else if (world->player.direction == movementInput::Left)
+	{
+		world->player.modelMatrix = glm::translate(world->player.modelMatrix, glm::vec3(-playerMoveSpeed, 0.00f, 0.0f));
+
+	}
+	else if (world->player.direction == movementInput::Right)
+	{
+		world->player.modelMatrix = glm::translate(world->player.modelMatrix, glm::vec3(playerMoveSpeed, 0.00f, 0.0f));
+
+	}
+
+
 }
 
 int initialise(SDL_Window *win,SDL_GLContext &glcontext, GLint width, GLint height)
@@ -592,12 +608,12 @@ int main(int argc, char *argv[]) {
 	  input(world,persData,colourValueGLMVector,running);
 
 	  //updating 
-	  update(world,persData);
+	  update(world,persData,lastdt);
 
 	  if (chrono::high_resolution_clock::now() > next_Game_Tick)
 	  {
 		  //rendering
-		 // render();
+		
 
 		  render(VAO,EBO,world,persData,colourValueGLMVector,shaderProgram,viewMatrix,projectionMatrix);
 
