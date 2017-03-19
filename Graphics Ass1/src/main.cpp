@@ -283,7 +283,11 @@ void update(MainWorld* &world, PersistantData* &persData, chrono::duration<doubl
 
 	float playerMoveSpeed = 0.5* t.count();
 
+	float mobMoveSpeedm =0.4 * t.count(); // need to have the space invaders speed up over time 
 
+	
+	
+	//player movement
 	if (world->player.direction == movementInput::Up)
 	{
 		world->player.modelMatrix = glm::translate(world->player.modelMatrix, glm::vec3(0.0f, playerMoveSpeed, 0.0f));
@@ -304,6 +308,31 @@ void update(MainWorld* &world, PersistantData* &persData, chrono::duration<doubl
 
 	}
 
+	bool dropDown =false;
+	//update each enermy sprite position here  
+	for (auto &enermy : world->enermieSp)
+	{
+		
+		switch(enermy.direction)
+		{
+			case movementInput::Right:
+					//		SDL_Log("Right");
+					enermy.modelMatrix = glm::translate(world->player.modelMatrix, glm::vec3(mobMoveSpeedm, 0.00f, 0.0f));
+					
+
+					break;
+				case movementInput::Left:
+					//		SDL_Log("Left");
+					enermy.modelMatrix = glm::translate(world->player.modelMatrix, glm::vec3(-playerMoveSpeed, 0.00f, 0.0f));
+		}
+		
+		
+		//
+		
+		
+	}
+	
+	
 
 }
 

@@ -30,6 +30,8 @@ void MainWorld::setUpEnermies(float entitieSize)
 			tmpSprite.modelMatrix = glm::translate(tmpSprite.modelMatrix, glm::vec3(j, i, 0.0f));
 			tmpSprite.modelMatrix = glm::scale(tmpSprite.modelMatrix, glm::vec3(size));
 			
+			tmpSprite.direction = movementInput::Left;//mobs start off going left
+			
 			enermieSp.push_back(tmpSprite);
 
 			j += size + 0.04f;
