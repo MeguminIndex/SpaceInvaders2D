@@ -317,13 +317,13 @@ void update(MainWorld* &world, PersistantData* &persData, chrono::duration<doubl
 		{
 			case movementInput::Right:
 					//		SDL_Log("Right");
-					enermy.modelMatrix = glm::translate(world->player.modelMatrix, glm::vec3(mobMoveSpeedm, 0.00f, 0.0f));
+					enermy.modelMatrix = glm::translate(enermy.modelMatrix, glm::vec3(mobMoveSpeedm, 0.00f, 0.0f));
 					
 
 					break;
 				case movementInput::Left:
 					//		SDL_Log("Left");
-					enermy.modelMatrix = glm::translate(world->player.modelMatrix, glm::vec3(-playerMoveSpeed, 0.00f, 0.0f));
+					enermy.modelMatrix = glm::translate(enermy.modelMatrix, glm::vec3(-playerMoveSpeed, 0.00f, 0.0f));
 		}
 		
 		
