@@ -139,7 +139,7 @@ void input(MainWorld* &world,PersistantData* &persData,vec3 &colourValueGLMVecto
 					break;
 
 				case SDL_SCANCODE_W:
-					world->player.direction = movementInput::Up;
+					//world->player.direction = movementInput::Up;
 					break;
 
 				case SDL_SCANCODE_A:
@@ -147,7 +147,7 @@ void input(MainWorld* &world,PersistantData* &persData,vec3 &colourValueGLMVecto
 					break;
 
 				case SDL_SCANCODE_S:
-					world->player.direction = movementInput::Down;
+					//world->player.direction = movementInput::Down;
 					break;
 
 				case SDL_SCANCODE_D:
@@ -281,23 +281,13 @@ void update(MainWorld* &world, PersistantData* &persData, chrono::duration<doubl
 	if (world->ApplyRotate == true)
 		world->player.rotationMatrix = glm::rotate(world->player.rotationMatrix, glm::radians(0.1f), glm::vec3(0.0f, 0.0f, 1.0f));
 
-	float playerMoveSpeed = 0.5* t.count();
+	float playerMoveSpeed = 2.0* t.count();
 
 	float mobMoveSpeedm =0.4 * t.count(); // need to have the space invaders speed up over time 
 
 	
-	
-	//player movement
-	if (world->player.direction == movementInput::Up)
-	{
-		world->player.modelMatrix = glm::translate(world->player.modelMatrix, glm::vec3(0.0f, playerMoveSpeed, 0.0f));
-	}
-	else if (world->player.direction == movementInput::Down)
-	{
-		world->player.modelMatrix = glm::translate(world->player.modelMatrix, glm::vec3(0.0f, -playerMoveSpeed, 0.0f));
 
-	}
-	else if (world->player.direction == movementInput::Left)
+	if (world->player.direction == movementInput::Left)
 	{
 		world->player.modelMatrix = glm::translate(world->player.modelMatrix, glm::vec3(-playerMoveSpeed, 0.00f, 0.0f));
 
@@ -307,6 +297,8 @@ void update(MainWorld* &world, PersistantData* &persData, chrono::duration<doubl
 		world->player.modelMatrix = glm::translate(world->player.modelMatrix, glm::vec3(playerMoveSpeed, 0.00f, 0.0f));
 
 	}
+
+
 
 	bool dropDown =false;
 	//update each enermy sprite position here  
@@ -323,7 +315,7 @@ void update(MainWorld* &world, PersistantData* &persData, chrono::duration<doubl
 					break;
 				case movementInput::Left:
 					//		SDL_Log("Left");
-					enermy.modelMatrix = glm::translate(enermy.modelMatrix, glm::vec3(-playerMoveSpeed, 0.00f, 0.0f));
+					enermy.modelMatrix = glm::translate(enermy.modelMatrix, glm::vec3(-mobMoveSpeedm, 0.00f, 0.0f));
 		}
 		
 		
@@ -418,13 +410,13 @@ int main(int argc, char *argv[]) {
 	// win = SDL_CreateWindow("Hello World", 100, 100, 800, 600, 0);
 
 	createWin(width, height,persData->window);
-
+	
 	if (persData->window == nullptr) {
 		SDL_LogCritical(SDL_LOG_CATEGORY_APPLICATION,
 			"SDL_CreateWindow init error: %s\n", SDL_GetError());
 		return 1;
 	}
-
+	//SDL_SetWindowTiel
 
 	SDL_GLContext glcontext = SDL_GL_CreateContext(persData->window);
 
@@ -596,7 +588,8 @@ int main(int argc, char *argv[]) {
   //loadSurface("assets\\wall2.png", texture);
   
  world->player = Sprite();
-  
+ world->player.modelMatrix = glm::translate(world->player.modelMatrix, glm::vec3(0.0f, -1.3f, 0.0f));
+ world->player.modelMatrix = glm::scale(world->player.modelMatrix, glm::vec3(0.2));
 
   persData->playerTexture = persData->ReturnTexture("assets\\wall2.png");
 
@@ -623,7 +616,7 @@ int main(int argc, char *argv[]) {
   bool running = true;
 
 
-  chrono::milliseconds skipTicks(1000 / 120);
+  chrono::milliseconds skipTicks(1000 / 60);
 
   chrono::high_resolution_clock::time_point next_Game_Tick = chrono::high_resolution_clock::now();
 
