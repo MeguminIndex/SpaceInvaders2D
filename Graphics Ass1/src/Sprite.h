@@ -33,7 +33,7 @@ public:
 	
 
 	
-
+	float size;
 	
 	glm::mat4 modelMatrix;
 	glm::mat4 rotationMatrix;

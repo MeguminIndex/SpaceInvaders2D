@@ -125,18 +125,8 @@ void input(MainWorld* &world,PersistantData* &persData,vec3 &colourValueGLMVecto
 				case SDL_SCANCODE_ESCAPE:
 					running = false;
 					break;
-				case SDL_SCANCODE_C:
-					if (world->Applytexture == false)
-					{
-						colourValueGLMVector = vec3(0.20f, 0.29f, 0.33f);
-						world->Applytexture = true;
-					}
-					else
-					{
-						colourValueGLMVector = vec3(0.255f, 0.64f, 0.100f);
-						world->Applytexture = false;
-					}
-					break;
+
+				
 
 				case SDL_SCANCODE_W:
 					//world->player.direction = movementInput::Up;
@@ -154,18 +144,9 @@ void input(MainWorld* &world,PersistantData* &persData,vec3 &colourValueGLMVecto
 					world->player.direction = movementInput::Right;
 					break;
 
-				case SDL_SCANCODE_0:
-					if (world->ApplyRotate == false)
-					{
+				case SDL_SCANCODE_LSHIFT:
 
-						world->ApplyRotate = true;
-					}
-					else
-					{
-
-						world->ApplyRotate = false;
-					}
-
+					world->playerFire = true;
 					break;
 
 				}
@@ -174,7 +155,7 @@ void input(MainWorld* &world,PersistantData* &persData,vec3 &colourValueGLMVecto
 			break;
 
 		case SDL_KEYUP:
-			world->player.direction = movementInput::None;
+			//world->player.direction = movementInput::None;
 			break;
 
 
@@ -195,7 +176,7 @@ void input(MainWorld* &world,PersistantData* &persData,vec3 &colourValueGLMVecto
 void render(GLuint VAO, GLuint EBO,MainWorld* world,PersistantData* persData, vec3 &colourValueGLMVector, GLuint shaderProgram, mat4 viewMatrix, mat4 projectionMatrix)
 {
 
-#pragma region testrendering
+
 	// pre-render	
 	
 	
@@ -251,12 +232,21 @@ void render(GLuint VAO, GLuint EBO,MainWorld* world,PersistantData* persData, ve
 		glUniformMatrix4fv(modelLocation2, 1, GL_FALSE, glm::value_ptr(enermy.modelMatrix*enermy.rotationMatrix));
 		glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
 
+	}
 
-		
+
+	for (const auto &bullet : world->bullets)
+	{
 
 
+		glBindTexture(GL_TEXTURE_2D, persData->enermieTexture);//binds texture
+		GLint modelLocation2 = glGetUniformLocation(shaderProgram, "modelMat");
+
+		glUniformMatrix4fv(modelLocation2, 1, GL_FALSE, glm::value_ptr(bullet.modelMatrix*bullet.rotationMatrix));
+		glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
 
 	}
+
 	
 	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
 	glBindVertexArray(0);
@@ -278,54 +268,128 @@ void update(MainWorld* &world, PersistantData* &persData, chrono::duration<doubl
 		persData->windowResized = false;
 	}
 
-	if (world->ApplyRotate == true)
-		world->player.rotationMatrix = glm::rotate(world->player.rotationMatrix, glm::radians(0.1f), glm::vec3(0.0f, 0.0f, 1.0f));
+	
 
 	float playerMoveSpeed = 2.0* t.count();
 
 	float mobMoveSpeedm =0.4 * t.count(); // need to have the space invaders speed up over time 
 
 	
+	//cout << "Xpos?: " << world->player.modelMatrix[3].x << endl;
 
-	if (world->player.direction == movementInput::Left)
+
+
+	if (world->player.direction == movementInput::Left &&  world->player.modelMatrix[3].x > 0.1f + world->player.size)
 	{
 		world->player.modelMatrix = glm::translate(world->player.modelMatrix, glm::vec3(-playerMoveSpeed, 0.00f, 0.0f));
 
 	}
-	else if (world->player.direction == movementInput::Right)
+	else if (world->player.direction == movementInput::Right &&  world->player.modelMatrix[3].x < 4 - (0.1f) )
 	{
 		world->player.modelMatrix = glm::translate(world->player.modelMatrix, glm::vec3(playerMoveSpeed, 0.00f, 0.0f));
 
 	}
 
+	if (world->playerFire == true)
+	{
 
+		Sprite TmpBullet;
 
+		TmpBullet.modelMatrix = glm::translate(world->player.modelMatrix, glm::vec3(0.0f, 0.05f, 0.0f));
+		TmpBullet.modelMatrix = glm::scale(TmpBullet.modelMatrix, glm::vec3(0.2f));
+		 
+		world->bullets.push_back(TmpBullet);
+
+		world->playerFire = false;
+	}
+
+	float bulletSpeed = 40 * t.count();
+	for (auto &bullet : world->bullets)
+	{
+		bullet.modelMatrix = glm::translate(bullet.modelMatrix, glm::vec3(0.0f, bulletSpeed, 0.0f));
+	}
+
+	
 	bool dropDown =false;
+	//check non of them will hit edge
+	for (auto &enermy : world->enermieSp)
+	{
+		glm::mat4 tmpmodel;
+		switch (enermy.direction)
+		{
+		case movementInput::Right:
+			//		SDL_Log("Right");
+			tmpmodel = glm::translate(enermy.modelMatrix, glm::vec3(mobMoveSpeedm, 0.00f, 0.0f));
+
+
+			break;
+		case movementInput::Left:
+			//		SDL_Log("Left");
+			tmpmodel = glm::translate(enermy.modelMatrix, glm::vec3(-mobMoveSpeedm, 0.00f, 0.0f));
+		}
+
+		if (tmpmodel[3].x  >  4 - 0.1f || tmpmodel[3].x < 0.1f + enermy.size)
+		{
+			dropDown = true;
+			break;
+		}
+
+	}
+
 	//update each enermy sprite position here  
 	for (auto &enermy : world->enermieSp)
 	{
 		
-		switch(enermy.direction)
+		//if the enermy should drop down
+		if (dropDown == true)
 		{
-			case movementInput::Right:
-					//		SDL_Log("Right");
-					enermy.modelMatrix = glm::translate(enermy.modelMatrix, glm::vec3(mobMoveSpeedm, 0.00f, 0.0f));
-					
+			float mobMoveSpeedTmp;
+			float ammount = 0.25;
+			enermy.modelMatrix = glm::translate(enermy.modelMatrix, glm::vec3(0.0f, -0.1f, 0.0f));
+			switch (enermy.direction)
+			{
 
-					break;
-				case movementInput::Left:
-					//		SDL_Log("Left");
-					enermy.modelMatrix = glm::translate(enermy.modelMatrix, glm::vec3(-mobMoveSpeedm, 0.00f, 0.0f));
+				
+			case movementInput::Right:
+				enermy.direction = movementInput::Left;
+				mobMoveSpeedTmp = 0 - ammount;
+				break;
+			case movementInput::Left:
+				enermy.direction = movementInput::Right;
+				mobMoveSpeedTmp = ammount;
+				break;
+			}
+			
+			enermy.modelMatrix = glm::translate(enermy.modelMatrix, glm::vec3(mobMoveSpeedTmp, 0.00f, 0.0f));
 		}
+
+			switch (enermy.direction)
+			{
+			case movementInput::Right:
+				//		SDL_Log("Right");
+				enermy.modelMatrix = glm::translate(enermy.modelMatrix, glm::vec3(mobMoveSpeedm, 0.00f, 0.0f));
+
+
+				break;
+			case movementInput::Left:
+				//		SDL_Log("Left");
+				enermy.modelMatrix = glm::translate(enermy.modelMatrix, glm::vec3(-mobMoveSpeedm, 0.00f, 0.0f));
+				break;
+			}
+
+				
+			
 		
+
+			
 		
 		//
 		
 		
 	}
-	
-	
-
+	//reset dropdown
+	//if(dropDown == true)
+	//	dropDown = false;
 }
 
 int initialise(SDL_Window *win,SDL_GLContext &glcontext, GLint width, GLint height)
@@ -430,7 +494,7 @@ int main(int argc, char *argv[]) {
 
   
 
-  vec3 colourValueGLMVector = vec3(0.255f, 0.64f, 0.100f);
+	vec3 colourValueGLMVector = vec3(0.20f, 0.29f, 0.33f);
 
 
   GLfloat vertices[] = {
@@ -584,12 +648,11 @@ int main(int argc, char *argv[]) {
   
   MainWorld* world = new MainWorld();
 
-  //GLuint texture; 
-  //loadSurface("assets\\wall2.png", texture);
   
  world->player = Sprite();
+ world->player.size = 0.2f;
  world->player.modelMatrix = glm::translate(world->player.modelMatrix, glm::vec3(0.0f, -1.3f, 0.0f));
- world->player.modelMatrix = glm::scale(world->player.modelMatrix, glm::vec3(0.2));
+ world->player.modelMatrix = glm::scale(world->player.modelMatrix, glm::vec3(world->player.size));
 
   persData->playerTexture = persData->ReturnTexture("assets\\wall2.png");
 

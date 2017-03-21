@@ -29,13 +29,12 @@ public:
 	~MainWorld();
 
 
-	bool Applytexture;
-	bool ApplyRotate;
 	
+	bool playerFire;
 
 	
 	vector<Sprite> enermieSp;
-	
+	vector<Sprite> bullets;
 	Sprite player;
 	
 
