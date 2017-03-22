@@ -27,18 +27,18 @@ public:
 	Sprite();
 	
 
-	void loadTexture(string file);
+
 	~Sprite();
 	
 	
-
+	float health;
 	
 	float size;
 	
 	glm::mat4 modelMatrix;
 	glm::mat4 rotationMatrix;
-#
 
+	bool dead;
 
 	movementInput direction = movementInput::None;
 };

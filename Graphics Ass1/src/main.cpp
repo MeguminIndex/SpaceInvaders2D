@@ -118,8 +118,8 @@ void input(MainWorld* &world,PersistantData* &persData,vec3 &colourValueGLMVecto
 
 		}
 		case SDL_KEYDOWN:
-			if (!e.key.repeat)
-			{
+		//	if (!e.key.repeat)
+		//	/{
 				switch (e.key.keysym.scancode)
 				{
 				case SDL_SCANCODE_ESCAPE:
@@ -144,18 +144,29 @@ void input(MainWorld* &world,PersistantData* &persData,vec3 &colourValueGLMVecto
 					world->player.direction = movementInput::Right;
 					break;
 
-				case SDL_SCANCODE_LSHIFT:
+				case SDL_SCANCODE_F:
 
 					world->playerFire = true;
 					break;
 
 				}
 
-			}
+			//}
 			break;
 
 		case SDL_KEYUP:
-			//world->player.direction = movementInput::None;
+			switch (e.key.keysym.scancode)
+			{
+		
+
+			case SDL_SCANCODE_W:			
+			case SDL_SCANCODE_A:		
+			case SDL_SCANCODE_S:
+			case SDL_SCANCODE_D:
+				world->player.direction = movementInput::None;
+				break;
+
+			}
 			break;
 
 
@@ -188,24 +199,7 @@ void render(GLuint VAO, GLuint EBO,MainWorld* world,PersistantData* persData, ve
 	glBindVertexArray(VAO);
 	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, EBO);
 
-	glBindTexture(GL_TEXTURE_2D, persData->playerTexture);//binds texture
-
-
-
-														  //set up the rotation transformation matrix
 	
-
-
-
-	GLint modelLocation = glGetUniformLocation(shaderProgram, "modelMat");
-
-	glUniformMatrix4fv(modelLocation, 1, GL_FALSE, glm::value_ptr(world->player.modelMatrix*world->player.rotationMatrix));
-
-	
-	glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
-
-
-
 
 	GLint viewLocation = glGetUniformLocation(shaderProgram, "viewMat");
 	GLint projectionLocation = glGetUniformLocation(shaderProgram, "projectionMat");
@@ -216,6 +210,19 @@ void render(GLuint VAO, GLuint EBO,MainWorld* world,PersistantData* persData, ve
 	glUniformMatrix4fv(projectionLocation, 1, GL_FALSE, glm::value_ptr(projectionMatrix));
 
 	
+
+	
+	//draw player
+	glBindTexture(GL_TEXTURE_2D, persData->playerTexture);//binds texture
+	GLint modelLocation = glGetUniformLocation(shaderProgram, "modelMat");
+	glUniformMatrix4fv(modelLocation, 1, GL_FALSE, glm::value_ptr(world->player.modelMatrix*world->player.rotationMatrix));
+	glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
+
+
+
+
+
+	
 	
 
 
@@ -224,13 +231,14 @@ void render(GLuint VAO, GLuint EBO,MainWorld* world,PersistantData* persData, ve
 
 	for (const auto &enermy : world->enermieSp)
 	{
+		if (enermy.dead == false)
+		{
+			glBindTexture(GL_TEXTURE_2D, persData->enermieTexture);//binds texture
+			GLint modelLocation2 = glGetUniformLocation(shaderProgram, "modelMat");
 
-
-		glBindTexture(GL_TEXTURE_2D, persData->enermieTexture);//binds texture
-		GLint modelLocation2 = glGetUniformLocation(shaderProgram, "modelMat");
-
-		glUniformMatrix4fv(modelLocation2, 1, GL_FALSE, glm::value_ptr(enermy.modelMatrix*enermy.rotationMatrix));
-		glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
+			glUniformMatrix4fv(modelLocation2, 1, GL_FALSE, glm::value_ptr(enermy.modelMatrix*enermy.rotationMatrix));
+			glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
+		}
 
 	}
 
@@ -238,13 +246,15 @@ void render(GLuint VAO, GLuint EBO,MainWorld* world,PersistantData* persData, ve
 	for (const auto &bullet : world->bullets)
 	{
 
+		if (bullet.dead == false)
+		{
 
-		glBindTexture(GL_TEXTURE_2D, persData->enermieTexture);//binds texture
-		GLint modelLocation2 = glGetUniformLocation(shaderProgram, "modelMat");
+			glBindTexture(GL_TEXTURE_2D, persData->enermieTexture);//binds texture
+			GLint modelLocation2 = glGetUniformLocation(shaderProgram, "modelMat");
 
-		glUniformMatrix4fv(modelLocation2, 1, GL_FALSE, glm::value_ptr(bullet.modelMatrix*bullet.rotationMatrix));
-		glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
-
+			glUniformMatrix4fv(modelLocation2, 1, GL_FALSE, glm::value_ptr(bullet.modelMatrix*bullet.rotationMatrix));
+			glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
+		}
 	}
 
 	
@@ -263,18 +273,18 @@ void update(MainWorld* &world, PersistantData* &persData, chrono::duration<doubl
 	if (persData->windowResized == true)
 	{
 		int w, h;
-		SDL_GL_GetDrawableSize(persData->window,&w,&h);
+		SDL_GL_GetDrawableSize(persData->window, &w, &h);
 		glViewport(0, 0, w, h);
 		persData->windowResized = false;
 	}
 
-	
+
 
 	float playerMoveSpeed = 2.0* t.count();
 
-	float mobMoveSpeedm =0.4 * t.count(); // need to have the space invaders speed up over time 
+	float mobMoveSpeedm = 0.4 * t.count(); // need to have the space invaders speed up over time 
 
-	
+
 	//cout << "Xpos?: " << world->player.modelMatrix[3].x << endl;
 
 
@@ -284,7 +294,7 @@ void update(MainWorld* &world, PersistantData* &persData, chrono::duration<doubl
 		world->player.modelMatrix = glm::translate(world->player.modelMatrix, glm::vec3(-playerMoveSpeed, 0.00f, 0.0f));
 
 	}
-	else if (world->player.direction == movementInput::Right &&  world->player.modelMatrix[3].x < 4 - (0.1f) )
+	else if (world->player.direction == movementInput::Right &&  world->player.modelMatrix[3].x < 4 - (0.1f))
 	{
 		world->player.modelMatrix = glm::translate(world->player.modelMatrix, glm::vec3(playerMoveSpeed, 0.00f, 0.0f));
 
@@ -297,7 +307,7 @@ void update(MainWorld* &world, PersistantData* &persData, chrono::duration<doubl
 
 		TmpBullet.modelMatrix = glm::translate(world->player.modelMatrix, glm::vec3(0.0f, 0.05f, 0.0f));
 		TmpBullet.modelMatrix = glm::scale(TmpBullet.modelMatrix, glm::vec3(0.2f));
-		 
+
 		world->bullets.push_back(TmpBullet);
 
 		world->playerFire = false;
@@ -309,31 +319,34 @@ void update(MainWorld* &world, PersistantData* &persData, chrono::duration<doubl
 		bullet.modelMatrix = glm::translate(bullet.modelMatrix, glm::vec3(0.0f, bulletSpeed, 0.0f));
 	}
 
-	
-	bool dropDown =false;
+
+	bool dropDown = false;
 	//check non of them will hit edge
 	for (auto &enermy : world->enermieSp)
 	{
-		glm::mat4 tmpmodel;
-		switch (enermy.direction)
+		if (enermy.dead == false)
 		{
-		case movementInput::Right:
-			//		SDL_Log("Right");
-			tmpmodel = glm::translate(enermy.modelMatrix, glm::vec3(mobMoveSpeedm, 0.00f, 0.0f));
+		
 
+			glm::mat4 tmpmodel;
+			switch (enermy.direction)
+			{
+				case movementInput::Right:
+				//		SDL_Log("Right");
+				tmpmodel = glm::translate(enermy.modelMatrix, glm::vec3(mobMoveSpeedm, 0.00f, 0.0f));
+				break;
+				case movementInput::Left:
+				//		SDL_Log("Left");
+				tmpmodel = glm::translate(enermy.modelMatrix, glm::vec3(-mobMoveSpeedm, 0.00f, 0.0f));
+			}
 
-			break;
-		case movementInput::Left:
-			//		SDL_Log("Left");
-			tmpmodel = glm::translate(enermy.modelMatrix, glm::vec3(-mobMoveSpeedm, 0.00f, 0.0f));
+			if (tmpmodel[3].x > 4 - 0.1f || tmpmodel[3].x < 0.1f + enermy.size)
+			{
+				dropDown = true;
+				break;
+			}
+
 		}
-
-		if (tmpmodel[3].x  >  4 - 0.1f || tmpmodel[3].x < 0.1f + enermy.size)
-		{
-			dropDown = true;
-			break;
-		}
-
 	}
 
 	//update each enermy sprite position here  

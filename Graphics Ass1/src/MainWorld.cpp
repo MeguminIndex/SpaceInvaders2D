@@ -27,6 +27,7 @@ void MainWorld::setUpEnermies(float entitieSize)
 		
 			Sprite tmpSprite;
 			tmpSprite.size = sizeM;
+			tmpSprite.health = 1;
 			tmpSprite.modelMatrix = glm::translate(tmpSprite.modelMatrix, glm::vec3(j, i, 0.0f));
 			tmpSprite.modelMatrix = glm::scale(tmpSprite.modelMatrix, glm::vec3(sizeM));
 			
