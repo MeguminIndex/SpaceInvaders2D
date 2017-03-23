@@ -14,7 +14,7 @@
 
 #include <chrono>
 #include <string>
-
+#include <iostream>
 using namespace std;
 
 enum class movementInput { Up, Down, Left, Right, None };
@@ -25,15 +25,14 @@ class Sprite
 
 public:
 	Sprite();
-	
-
-
 	~Sprite();
 	
+	bool checkcollision(const float otherX, const float otherY,  float otherWidth,  float otherHeight);
+
 	
 	float health;
 	
-	float size;
+	float sizeH;
 	
 	glm::mat4 modelMatrix;
 	glm::mat4 rotationMatrix;

@@ -129,7 +129,7 @@ void input(MainWorld* &world,PersistantData* &persData,vec3 &colourValueGLMVecto
 				
 
 				case SDL_SCANCODE_W:
-					//world->player.direction = movementInput::Up;
+					world->player.direction = movementInput::Up;
 					break;
 
 				case SDL_SCANCODE_A:
@@ -137,7 +137,7 @@ void input(MainWorld* &world,PersistantData* &persData,vec3 &colourValueGLMVecto
 					break;
 
 				case SDL_SCANCODE_S:
-					//world->player.direction = movementInput::Down;
+					world->player.direction = movementInput::Down;
 					break;
 
 				case SDL_SCANCODE_D:
@@ -284,12 +284,13 @@ void update(MainWorld* &world, PersistantData* &persData, chrono::duration<doubl
 
 	float mobMoveSpeedm = 0.4 * t.count(); // need to have the space invaders speed up over time 
 
+//	cout << "Ypos?: " << world->player.modelMatrix[3].y << endl;
+//	cout << "Xpos?: " << world->player.modelMatrix[3].x << endl;
 
-	//cout << "Xpos?: " << world->player.modelMatrix[3].x << endl;
+//	cout << "Ypos?[][]: " << world->player.modelMatrix[1][1] << endl;
+	//cout << "Xpos?[][]: " << world->player.modelMatrix[0][0] << endl;
 
-
-
-	if (world->player.direction == movementInput::Left &&  world->player.modelMatrix[3].x > 0.1f + world->player.size)
+	if (world->player.direction == movementInput::Left &&  world->player.modelMatrix[3].x > 0.1f + world->player.sizeH)
 	{
 		world->player.modelMatrix = glm::translate(world->player.modelMatrix, glm::vec3(-playerMoveSpeed, 0.00f, 0.0f));
 
@@ -299,15 +300,29 @@ void update(MainWorld* &world, PersistantData* &persData, chrono::duration<doubl
 		world->player.modelMatrix = glm::translate(world->player.modelMatrix, glm::vec3(playerMoveSpeed, 0.00f, 0.0f));
 
 	}
+	else if (world->player.direction == movementInput::Up)
+	{
+		world->player.modelMatrix = glm::translate(world->player.modelMatrix, glm::vec3(0.0f, playerMoveSpeed, 0.0f));
+	}
+	else if (world->player.direction == movementInput::Down)
+	{
+		world->player.modelMatrix = glm::translate(world->player.modelMatrix, glm::vec3(0.0f, -playerMoveSpeed, 0.0f));
+	}
+
 
 	if (world->playerFire == true)
 	{
 
 		Sprite TmpBullet;
+		float scale = 0.2f;
 
-		TmpBullet.modelMatrix = glm::translate(world->player.modelMatrix, glm::vec3(0.0f, 0.05f, 0.0f));
-		TmpBullet.modelMatrix = glm::scale(TmpBullet.modelMatrix, glm::vec3(0.2f));
 
+
+		TmpBullet.modelMatrix = glm::translate(world->player.modelMatrix, glm::vec3(0.0f, 1.0f, 0.0f));
+		//TmpBullet.modelMatrix = glm::scale(TmpBullet.modelMatrix, glm::vec3(scale));
+		
+
+		TmpBullet.sizeH = scale;
 		world->bullets.push_back(TmpBullet);
 
 		world->playerFire = false;
@@ -319,6 +334,8 @@ void update(MainWorld* &world, PersistantData* &persData, chrono::duration<doubl
 		bullet.modelMatrix = glm::translate(bullet.modelMatrix, glm::vec3(0.0f, bulletSpeed, 0.0f));
 	}
 
+
+	
 
 	bool dropDown = false;
 	//check non of them will hit edge
@@ -340,11 +357,12 @@ void update(MainWorld* &world, PersistantData* &persData, chrono::duration<doubl
 				tmpmodel = glm::translate(enermy.modelMatrix, glm::vec3(-mobMoveSpeedm, 0.00f, 0.0f));
 			}
 
-			if (tmpmodel[3].x > 4 - 0.1f || tmpmodel[3].x < 0.1f + enermy.size)
+			if (tmpmodel[3].x > 4 - 0.1f || tmpmodel[3].x < 0.1f + enermy.sizeH)
 			{
 				dropDown = true;
 				break;
 			}
+
 
 		}
 	}
@@ -352,29 +370,32 @@ void update(MainWorld* &world, PersistantData* &persData, chrono::duration<doubl
 	//update each enermy sprite position here  
 	for (auto &enermy : world->enermieSp)
 	{
-		
-		//if the enermy should drop down
-		if (dropDown == true)
+		if (enermy.dead == false)
 		{
-			float mobMoveSpeedTmp;
-			float ammount = 0.25;
-			enermy.modelMatrix = glm::translate(enermy.modelMatrix, glm::vec3(0.0f, -0.1f, 0.0f));
-			switch (enermy.direction)
+			//if the enermy should drop down
+			if (dropDown == true)
 			{
+				float mobMoveSpeedTmp;
+				float ammount = 0.25;
+				enermy.modelMatrix = glm::translate(enermy.modelMatrix, glm::vec3(0.0f, -0.1f, 0.0f));
+				switch (enermy.direction)
+				{
 
-				
-			case movementInput::Right:
-				enermy.direction = movementInput::Left;
-				mobMoveSpeedTmp = 0 - ammount;
-				break;
-			case movementInput::Left:
-				enermy.direction = movementInput::Right;
-				mobMoveSpeedTmp = ammount;
-				break;
+
+				case movementInput::Right:
+					enermy.direction = movementInput::Left;
+					mobMoveSpeedTmp = 0 - ammount;
+					break;
+				case movementInput::Left:
+					enermy.direction = movementInput::Right;
+					mobMoveSpeedTmp = ammount;
+					break;
+
+
+				}
+
+				enermy.modelMatrix = glm::translate(enermy.modelMatrix, glm::vec3(mobMoveSpeedTmp, 0.00f, 0.0f));
 			}
-			
-			enermy.modelMatrix = glm::translate(enermy.modelMatrix, glm::vec3(mobMoveSpeedTmp, 0.00f, 0.0f));
-		}
 
 			switch (enermy.direction)
 			{
@@ -390,14 +411,29 @@ void update(MainWorld* &world, PersistantData* &persData, chrono::duration<doubl
 				break;
 			}
 
-				
-			
-		
 
-			
-		
-		//
-		
+
+			vector<int>deleteLoc;
+			int i = 0;
+			for (auto &bullet : world->bullets)
+			{
+
+				
+				if (enermy.checkcollision(bullet.modelMatrix[3].x, bullet.modelMatrix[3].y, bullet.sizeH, bullet.sizeH) == true)
+				{
+
+					cout << "Collision Happened with bullet and mob" << endl;
+
+					enermy.dead = true;
+					deleteLoc.push_back(i);
+				}
+				i++;
+			}
+
+
+
+			//
+		}
 		
 	}
 	//reset dropdown
@@ -663,9 +699,9 @@ int main(int argc, char *argv[]) {
 
   
  world->player = Sprite();
- world->player.size = 0.2f;
+ world->player.sizeH = 0.2f;
  world->player.modelMatrix = glm::translate(world->player.modelMatrix, glm::vec3(0.0f, -1.3f, 0.0f));
- world->player.modelMatrix = glm::scale(world->player.modelMatrix, glm::vec3(world->player.size));
+ world->player.modelMatrix = glm::scale(world->player.modelMatrix, glm::vec3(world->player.sizeH));
 
   persData->playerTexture = persData->ReturnTexture("assets\\wall2.png");
 
