@@ -15,6 +15,9 @@
 #include <glm/gtc/matrix_transform.hpp>
 #include <glm/gtc/type_ptr.hpp>
 
+
+#include "SDL_ttf.h"
+
 using namespace std;
 
 
@@ -29,24 +32,23 @@ public:
 	PersistantData();
 	~PersistantData();
 	
+	void loadfont(string path);
+
 	bool closeApplication = false;
 	bool resartGame;
 	
 
-
+	TTF_Font *font;
 	
 	int windowW = 0, windowH = 0;
-	float gameWorldW = 0, gameWorldH = 0;
 
-	float windowWRatio = 0, windowHRatio = 0;
 
 	bool paused = false;
 
 	
+	bool fullscreen = false;
 
 
-
-	void gameToScreenRatio();
 
 	bool windowResized = false;
 	
@@ -66,7 +68,7 @@ public:
 	//textures
 	GLuint enermieTexture;
 	GLuint playerTexture;
-
+	GLuint bulletTexture;
 	
 
 	//window/render

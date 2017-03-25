@@ -15,6 +15,8 @@
 #include <chrono>
 #include <string>
 #include <iostream>
+#include <vector>
+
 using namespace std;
 
 enum class movementInput { Up, Down, Left, Right, None };
@@ -28,7 +30,7 @@ public:
 	~Sprite();
 	
 	bool checkcollision(const float otherX, const float otherY,  float otherWidth,  float otherHeight);
-
+	void createBullet(vector<Sprite> &list, float direction);
 	
 	float health;
 	
@@ -38,6 +40,13 @@ public:
 	glm::mat4 rotationMatrix;
 
 	bool dead;
+
+	int cooldownValue = 1000;
+
+	
+
+	chrono::high_resolution_clock::time_point lastShot = chrono::high_resolution_clock::now();
+
 
 	movementInput direction = movementInput::None;
 };

@@ -11,6 +11,17 @@ using namespace std;
 		dead = false;
 	}
 
+
+	void Sprite::createBullet(vector<Sprite> &list, float direction)
+	{
+		Sprite TmpBullet;
+		float scale = 0.2f;
+		TmpBullet.modelMatrix = glm::translate(modelMatrix, glm::vec3(0.0f, direction, 0.0f));
+		//TmpBullet.modelMatrix = glm::scale(TmpBullet.modelMatrix, glm::vec3(scale));
+		TmpBullet.sizeH = 1 * scale;
+		list.push_back(TmpBullet);
+	}
+
 	bool Sprite::checkcollision(const float otherX, const float otherY,  float otherWidth,  float otherHeight)
 	{
 	
@@ -64,6 +75,6 @@ using namespace std;
 	{
 	
 		
-		SDL_Log("Sprite destroyed");
+		//SDL_Log("Sprite destroyed");
 
 	}

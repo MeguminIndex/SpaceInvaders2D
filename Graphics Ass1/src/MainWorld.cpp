@@ -10,8 +10,8 @@ MainWorld::MainWorld()
 {
 	SDL_LogDebug(SDL_LOG_PRIORITY_DEBUG, "MainWorld Constructed");
 
-
-
+	bullets.reserve(50);
+	enermieBullets.reserve(50);
 
 }
 
@@ -26,11 +26,13 @@ void MainWorld::setUpEnermies(float entitieSize)
 		{
 		
 			Sprite tmpSprite;
-			tmpSprite.sizeH = sizeM;
+			tmpSprite.sizeH = 1 * sizeM;
 			tmpSprite.health = 1;
 			tmpSprite.modelMatrix = glm::translate(tmpSprite.modelMatrix, glm::vec3(j, i, 0.0f));
 			tmpSprite.modelMatrix = glm::scale(tmpSprite.modelMatrix, glm::vec3(sizeM));
 			
+
+			tmpSprite.lastShot += chrono::milliseconds(int(tmpSprite.cooldownValue*(i*j)) + 8000);
 			tmpSprite.direction = movementInput::Left;//mobs start off going left
 			
 			enermieSp.push_back(tmpSprite);

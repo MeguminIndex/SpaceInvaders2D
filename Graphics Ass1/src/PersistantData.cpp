@@ -11,21 +11,10 @@ PersistantData::PersistantData()
 
 }
 
-void PersistantData::setGameWorldSize(float w, float h)
-{
-	gameWorldRh = h;
-	gameWorldRw = w;
-
-}
-
-
-void PersistantData::gameToScreenRatio()//translates the games internal cords to ones relivent to the users screen
+void PersistantData::loadfont(string path)
 {
 
-	windowWRatio = gameWorldRw / windowW;
-	windowHRatio = gameWorldRh / windowH;
-
-	//std::cout << windowHRatio << windowWRatio << endl;
+	font = TTF_OpenFont(path.c_str(),20);
 
 
 }

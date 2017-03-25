@@ -31,10 +31,13 @@ public:
 
 	
 	bool playerFire;
+	bool rorate = false;
 
+	float mobSpeed = 0.4f;
 	
 	vector<Sprite> enermieSp;
 	vector<Sprite> bullets;
+	vector<Sprite> enermieBullets;
 	Sprite player;
 	
 
