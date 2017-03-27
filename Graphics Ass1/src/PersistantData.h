@@ -37,6 +37,7 @@ public:
 	bool closeApplication = false;
 	bool resartGame;
 	
+	bool gameOver = false;
 
 	TTF_Font *font;
 	
@@ -69,7 +70,7 @@ public:
 	GLuint enermieTexture;
 	GLuint playerTexture;
 	GLuint bulletTexture;
-	
+	GLuint backgroundTexture;
 
 	//window/render
 	SDL_Window *window = nullptr;

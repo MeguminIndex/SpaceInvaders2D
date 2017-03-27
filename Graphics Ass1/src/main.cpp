@@ -208,6 +208,9 @@ void render(GLuint VAO, GLuint EBO,MainWorld* world,PersistantData* persData, ve
 	glClearColor(colourValueGLMVector.r, colourValueGLMVector.g, colourValueGLMVector.b, 1.0f);
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
+
+
+
 	// render
 	glUseProgram(shaderProgram);
 	glBindVertexArray(VAO);
@@ -223,9 +226,15 @@ void render(GLuint VAO, GLuint EBO,MainWorld* world,PersistantData* persData, ve
 	glUniformMatrix4fv(viewLocation, 1, GL_FALSE, glm::value_ptr(viewMatrix));
 	glUniformMatrix4fv(projectionLocation, 1, GL_FALSE, glm::value_ptr(projectionMatrix));
 
-	
 
-	
+
+	glBindTexture(GL_TEXTURE_2D, persData->backgroundTexture);//binds texture
+	GLint modelLocation = glGetUniformLocation(shaderProgram, "modelMat");
+	glUniformMatrix4fv(modelLocation, 1, GL_FALSE, glm::value_ptr(world->background.modelMatrix*world->background.rotationMatrix));
+	glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
+
+
+
 	//draw player
 	if (world->player.dead == false)
 	{
@@ -234,6 +243,15 @@ void render(GLuint VAO, GLuint EBO,MainWorld* world,PersistantData* persData, ve
 		glUniformMatrix4fv(modelLocation, 1, GL_FALSE, glm::value_ptr(world->player.modelMatrix*world->player.rotationMatrix));
 		glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
 	}
+
+
+
+
+
+
+
+
+
 
 
 
@@ -278,6 +296,38 @@ void render(GLuint VAO, GLuint EBO,MainWorld* world,PersistantData* persData, ve
 		}
 	}
 	
+
+
+
+	SDL_Color color;
+	color.r = 255;
+
+	SDL_Surface *texSurf = TTF_RenderUTF8_Blended(persData->font, "My first Text!", color); //< Doesn't work
+
+	float X = 2.0f, Y = 1.5f, Z = 0.0f;
+
+	GLuint fontTexture;
+	glGenTextures(1, &fontTexture);
+	glBindTexture(GL_TEXTURE_2D, fontTexture);
+
+	glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+	glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+
+	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, texSurf->w, texSurf->h, 0, GL_BGRA, GL_UNSIGNED_BYTE, texSurf->pixels);
+
+
+  
+  
+	glDeleteTextures(1, &fontTexture);
+
+
+
+	SDL_FreeSurface(texSurf);
+
+
+
+
+
 	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
 	glBindVertexArray(0);
 
@@ -298,40 +348,44 @@ void update(MainWorld* &world, PersistantData* &persData, chrono::duration<doubl
 		persData->windowResized = false;
 	}
 
-
-
-	float playerMoveSpeed = 4.0* t.count();
-
-	float mobMoveSpeedm = world->mobSpeed * t.count(); // need to have the space invaders speed up over time 
-
-	world->mobSpeed += (0.1f * t.count());
-
-
-	if (world->player.dead == false)
+	if (persData->gameOver == false)
 	{
 
-		if (world->player.direction == movementInput::Left &&  world->player.modelMatrix[3].x > 0.1f + world->player.sizeH)
-		{
-			world->player.modelMatrix = glm::translate(world->player.modelMatrix, glm::vec3(-playerMoveSpeed, 0.00f, 0.0f));
+		float playerMoveSpeed = 4.0* t.count();
+		float backgroundMovement = 0.05 * t.count();
+		float mobMoveSpeedm = world->mobSpeed * t.count(); // need to have the space invaders speed up over time 
 
-		}
-		else if (world->player.direction == movementInput::Right &&  world->player.modelMatrix[3].x < 4 - (0.1f))
-		{
-			world->player.modelMatrix = glm::translate(world->player.modelMatrix, glm::vec3(playerMoveSpeed, 0.00f, 0.0f));
+		world->mobSpeed += (0.1f * t.count());
 
-		}
-
-		if (world->playerFire == true && world->player.lastShot < chrono::high_resolution_clock::now())
+		
+		if (world->player.dead == false)
 		{
 
-			world->player.createBullet(world->bullets, 1.0f);
-			world->player.lastShot += chrono::milliseconds(world->player.cooldownValue);
+			if (world->player.direction == movementInput::Left &&  world->player.modelMatrix[3].x > 0.1f + world->player.sizeH)
+			{
+				world->player.modelMatrix = glm::translate(world->player.modelMatrix, glm::vec3(-playerMoveSpeed, 0.00f, 0.0f));
+				world->background.modelMatrix = glm::translate(world->background.modelMatrix, glm::vec3(backgroundMovement, 0.00f, 0.0f));
+
+
+			}
+			else if (world->player.direction == movementInput::Right &&  world->player.modelMatrix[3].x < 4 - (0.1f))
+			{
+				world->player.modelMatrix = glm::translate(world->player.modelMatrix, glm::vec3(playerMoveSpeed, 0.00f, 0.0f));
+				world->background.modelMatrix = glm::translate(world->background.modelMatrix, glm::vec3(-backgroundMovement, 0.00f, 0.0f));
+
+			}
+
+			if (world->playerFire == true && world->player.lastShot < chrono::high_resolution_clock::now())
+			{
+
+				world->player.createBullet(world->bullets, 1.0f);
+				world->player.lastShot += chrono::milliseconds(world->player.cooldownValue);
+
+			}
+			world->playerFire = false;
+
 
 		}
-		world->playerFire = false;
-
-
-	}
 
 		float rotate = 0.1f *t.count();
 
@@ -346,153 +400,160 @@ void update(MainWorld* &world, PersistantData* &persData, chrono::duration<doubl
 		}
 
 
-	
 
-	bool dropDown = false;
-	//check non of them will hit edge
-	
-	for (auto &enermy : world->enermieSp)
-	{
-		if (enermy.dead == false)
+
+		bool dropDown = false;
+		//check non of them will hit edge
+
+		for (auto &enermy : world->enermieSp)
 		{
-		
-			
-			glm::mat4 tmpmodel;
-			switch (enermy.direction)
+			if (enermy.dead == false)
 			{
-				case movementInput::Right:
-				//		SDL_Log("Right");
-				tmpmodel = glm::translate(enermy.modelMatrix, glm::vec3(mobMoveSpeedm, 0.00f, 0.0f));
-				break;
-				case movementInput::Left:
-				//		SDL_Log("Left");
-				tmpmodel = glm::translate(enermy.modelMatrix, glm::vec3(-mobMoveSpeedm, 0.00f, 0.0f));
-			}
-
-			if (tmpmodel[3].x > 4 - 0.1f || tmpmodel[3].x < 0.1f + enermy.sizeH)
-			{
-				dropDown = true;
-				break;
-			}
 
 
-		}
-	}
-	
-
-
-	
-
-
-	int nSDelay = 1;
-	//update each enermy sprite position here  
-	for (auto &enermy : world->enermieSp)
-	{
-
-		if (enermy.dead == false)
-		{
-			//if the enermy should drop down
-			if (dropDown == true)
-			{
-				float mobMoveSpeedTmp;
-				float ammount = 0.25;
-				enermy.modelMatrix = glm::translate(enermy.modelMatrix, glm::vec3(0.0f, -0.1f, 0.0f));
+				glm::mat4 tmpmodel;
 				switch (enermy.direction)
 				{
-
-
 				case movementInput::Right:
-					enermy.direction = movementInput::Left;
-					mobMoveSpeedTmp = 0 - ammount;
+					//		SDL_Log("Right");
+					tmpmodel = glm::translate(enermy.modelMatrix, glm::vec3(mobMoveSpeedm, 0.00f, 0.0f));
 					break;
 				case movementInput::Left:
-					enermy.direction = movementInput::Right;
-					mobMoveSpeedTmp = ammount;
-					break;
-
-
+					//		SDL_Log("Left");
+					tmpmodel = glm::translate(enermy.modelMatrix, glm::vec3(-mobMoveSpeedm, 0.00f, 0.0f));
 				}
 
-				enermy.modelMatrix = glm::translate(enermy.modelMatrix, glm::vec3(mobMoveSpeedTmp, 0.00f, 0.0f));
+				if (tmpmodel[3].x > 4 - 0.1f && enermy.direction == movementInput::Right || tmpmodel[3].x < 0.1f + enermy.sizeH && enermy.direction == movementInput::Left)
+				{
+					dropDown = true;
+					break;
+				}
 
-			
 
 			}
+		}
 
 
 
-			
-
-			switch (enermy.direction)
-			{
-			case movementInput::Right:
-				//		SDL_Log("Right");
-				enermy.modelMatrix = glm::translate(enermy.modelMatrix, glm::vec3(mobMoveSpeedm, 0.00f, 0.0f));
 
 
-				break;
-			case movementInput::Left:
-				//		SDL_Log("Left");
-				enermy.modelMatrix = glm::translate(enermy.modelMatrix, glm::vec3(-mobMoveSpeedm, 0.00f, 0.0f));
-				break;
-			}
 
-		
-
-
-			srand(time(NULL));
-			int rng = rand() % 3 + 1;
-
-		if (enermy.lastShot < chrono::high_resolution_clock::now())
+		int nSDelay = 1;
+		//update each enermy sprite position here  
+		for (auto &enermy : world->enermieSp)
 		{
 
-			enermy.createBullet(world->enermieBullets,-1.0f);
-			
-			enermy.lastShot += chrono::milliseconds(enermy.cooldownValue*(rng*nSDelay));
-		}
-
-		nSDelay++;
-
-			vector<int>deleteLoc;
-			int i = 0;
-			for (auto &bullet : world->bullets)
+			if (enermy.dead == false)
 			{
-				if (bullet.dead == false)
+				//if the enermy should drop down
+				if (dropDown == true)
 				{
-
-					if (enermy.checkcollision(bullet.modelMatrix[3].x, bullet.modelMatrix[3].y, bullet.sizeH, bullet.sizeH) == true)
+					float mobMoveSpeedTmp;
+					float ammount = 0.25;
+					enermy.modelMatrix = glm::translate(enermy.modelMatrix, glm::vec3(0.0f, -0.1f, 0.0f));
+					switch (enermy.direction)
 					{
 
-						cout << "Collision Happened with bullet and mob" << endl;
 
-						bullet.dead = true;
+					case movementInput::Right:
+						enermy.direction = movementInput::Left;
+						mobMoveSpeedTmp = 0 - ammount;
+						break;
+					case movementInput::Left:
+						enermy.direction = movementInput::Right;
+						mobMoveSpeedTmp = ammount;
+						break;
 
-						enermy.health -= 1;
-						if (enermy.health <= 0)
-						{
-							enermy.dead = true;
-							deleteLoc.push_back(i);
-						}
+
 					}
-					i++;
+
+					enermy.modelMatrix = glm::translate(enermy.modelMatrix, glm::vec3(0.0f, 0.00f, 0.0f));
+
+
+					if (enermy.modelMatrix[3].y < 0.8)
+					{
+						persData->gameOver = true;
+						world->player.dead = true;
+						cout << "Aliens got too far, GameOver" << endl;
+					}
 				}
+
+
+
+
+
+				switch (enermy.direction)
+				{
+				case movementInput::Right:
+					//		SDL_Log("Right");
+					enermy.modelMatrix = glm::translate(enermy.modelMatrix, glm::vec3(mobMoveSpeedm, 0.00f, 0.0f));
+
+
+					break;
+				case movementInput::Left:
+					//		SDL_Log("Left");
+					enermy.modelMatrix = glm::translate(enermy.modelMatrix, glm::vec3(-mobMoveSpeedm, 0.00f, 0.0f));
+					break;
+				}
+
+
+
+
+				srand(time(NULL));
+				int rng = rand() % 3 + 1;
+
+				if (enermy.lastShot < chrono::high_resolution_clock::now())
+				{
+
+					enermy.createBullet(world->enermieBullets, -1.0f);
+
+					enermy.lastShot += chrono::milliseconds(enermy.cooldownValue*(rng*nSDelay));
+				}
+
+				nSDelay++;
+
+				vector<int>deleteLoc;
+				int i = 0;
+				for (auto &bullet : world->bullets)
+				{
+					if (bullet.dead == false)
+					{
+
+						if (enermy.checkcollision(bullet.modelMatrix[3].x, bullet.modelMatrix[3].y, bullet.sizeH, bullet.sizeH) == true)
+						{
+
+							//cout << "Collision Happened with bullet and mob" << endl;
+
+							bullet.dead = true;
+
+							enermy.health -= 1;
+							if (enermy.health <= 0)
+							{
+								world->player.points += 1;
+								cout << "Player Points: " << world->player.points <<endl;
+								enermy.dead = true;
+								deleteLoc.push_back(i);
+							}
+						}
+						i++;
+					}
+				}
+
+
+
+				//
 			}
 
-
-
-			//
 		}
-		
-	}
 
 
-	
+
 		for (auto &bullet : world->enermieBullets)
 		{
 			if (bullet.dead == false)
 			{
 				bullet.modelMatrix = glm::translate(bullet.modelMatrix, glm::vec3(0.0f, -bulletSpeed, 0.0f));
-				
+
 				if (world->player.dead == false)
 				{
 
@@ -500,15 +561,17 @@ void update(MainWorld* &world, PersistantData* &persData, chrono::duration<doubl
 					if (bullet.checkcollision(world->player.modelMatrix[3].x, world->player.modelMatrix[3].y, world->player.sizeH, world->player.sizeH) == true)
 					{
 
-						cout << "Collision Happened with bullet and mob" << endl;
+						//cout << "Collision Happened with bullet and mob" << endl;
 
 						bullet.dead = true;
 
 						world->player.health -= 1;
+						cout << "Player took dmg current lives is: " << world->player.health <<endl;
 						if (world->player.health <= 0)
 						{
 							world->player.dead = true;
-
+							persData->gameOver = true;
+							cout << "Player Died: GAME OVER" << endl;
 						}
 					}
 				}
@@ -516,13 +579,24 @@ void update(MainWorld* &world, PersistantData* &persData, chrono::duration<doubl
 			}
 		}
 
-	
 
 
 
-	//reset dropdown
-	//if(dropDown == true)
-	//	dropDown = false;
+
+		//reset dropdown
+		//if(dropDown == true)
+		//	dropDown = false;
+
+
+		
+
+
+	}
+	else
+	{
+
+
+	}
 }
 
 int initialise(SDL_Window *win,SDL_GLContext &glcontext, GLint width, GLint height)
@@ -798,10 +872,18 @@ int main(int argc, char *argv[]) {
  world->player.sizeH = 0.2f;
  world->player.modelMatrix = glm::translate(world->player.modelMatrix, glm::vec3(0.0f, -1.3f, 0.0f));
  world->player.modelMatrix = glm::scale(world->player.modelMatrix, glm::vec3(world->player.sizeH));
+ world->player.health = 3;
+
+ world->background = Sprite();
+ world->background.modelMatrix = glm::translate(world->background.modelMatrix, glm::vec3(2.8f, -2.5f, 0.0f));
+ world->background.modelMatrix = glm::scale(world->background.modelMatrix, glm::vec3(5.5f));
+ 
+ // world->background.rotationMatrix = glm::rotate(world->background.rotationMatrix, glm::radians(90.0f), glm::vec3(0.0f, 0.0f, 1.0f));
 
   persData->playerTexture = persData->ReturnTexture("assets\\player.png");
   persData->enermieTexture = persData->ReturnTexture("assets\\enermy2.png");
   persData->bulletTexture = persData->ReturnTexture("assets\\bullet.png");
+  persData->backgroundTexture = persData->ReturnTexture("assets\\background.png");
 
   world->setUpEnermies(4);
 

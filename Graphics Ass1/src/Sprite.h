@@ -36,6 +36,8 @@ public:
 	
 	float sizeH;
 	
+	int points=0;
+
 	glm::mat4 modelMatrix;
 	glm::mat4 rotationMatrix;
 

@@ -30,7 +30,7 @@ void MainWorld::setUpEnermies(float entitieSize)
 			tmpSprite.health = 1;
 			tmpSprite.modelMatrix = glm::translate(tmpSprite.modelMatrix, glm::vec3(j, i, 0.0f));
 			tmpSprite.modelMatrix = glm::scale(tmpSprite.modelMatrix, glm::vec3(sizeM));
-			
+			tmpSprite.points = 1;
 
 			tmpSprite.lastShot += chrono::milliseconds(int(tmpSprite.cooldownValue*(i*j)) + 8000);
 			tmpSprite.direction = movementInput::Left;//mobs start off going left

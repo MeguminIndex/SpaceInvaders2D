@@ -38,6 +38,8 @@ public:
 	vector<Sprite> enermieSp;
 	vector<Sprite> bullets;
 	vector<Sprite> enermieBullets;
+	Sprite background;
+
 	Sprite player;
 	
 
