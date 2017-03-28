@@ -309,10 +309,17 @@ void render(GLuint VAO, GLuint EBO,MainWorld* world,PersistantData* persData, ve
 		if (blockade.dead == false)
 		{
 
-			glBindTexture(GL_TEXTURE_2D, persData->bulletTexture);//binds texture
+			glBindTexture(GL_TEXTURE_2D, persData->barrierTexture);//binds texture
 			GLint modelLocation2 = glGetUniformLocation(shaderProgram, "modelMat");
 
 			glUniformMatrix4fv(modelLocation2, 1, GL_FALSE, glm::value_ptr(blockade.modelMatrix*blockade.rotationMatrix));
+
+			/*GLint colorUniLocation = glGetUniformLocation(shaderProgram, "colorUni");
+
+			vec3 color = {1.0f, 0.0f, 0.0f};
+
+			glUniform3f(colorUniLocation, (GLfloat)color.r, (GLfloat)color.g, (GLfloat)color.b);*/
+
 			glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
 		}
 	}
@@ -854,7 +861,7 @@ int main(int argc, char *argv[]) {
 
   GLfloat vertices[] = {
 	  // Positions          // Colors           // Texture Coords
-	  0.0f,  1.0f, 0.0f,   1.0f, 1.0f, 1.0f,   1.0f, 1.0f, // Top Right
+	  0.0f,  1.0f, 0.0f,   1.0f, 0.0f, 1.0f,   1.0f, 1.0f, // Top Right
 	  0.0f, -0.0f, 0.0f,   1.0f, 1.0f, 1.0f,   1.0f, 0.0f, // Bottom Right
 	  -1.0f, -0.0f, 0.0f,   1.0f, 1.0f, 1.0f,   0.0f, 0.0f, // Bottom Left
 	  -1.0f,  1.0f, 0.0f,   1.0f, 1.0f, 1.0f,   0.0f, 1.0f,  // Top Left 	 
@@ -869,6 +876,8 @@ int main(int argc, char *argv[]) {
 
 #pragma region GLBuffers/Shaders ect..
   //try finding reading from a seperate file
+
+  //uniform vec3 colorUni;
   const GLchar* vertexShaderSource = R"(
 		#version 430 core
   		layout (location = 0) in vec3 position;
@@ -881,6 +890,9 @@ int main(int argc, char *argv[]) {
 		uniform mat4 modelMat;
 		uniform mat4 viewMat;
 		uniform mat4 projectionMat;
+
+		
+
 		void main()
 		{
 			gl_Position = projectionMat * viewMat * modelMat * vec4(position.x, position.y, position.z, 1.0);
@@ -1035,6 +1047,10 @@ int main(int argc, char *argv[]) {
   persData->enermieTexture = persData->ReturnTexture("assets\\enermy2.png");
   persData->bulletTexture = persData->ReturnTexture("assets\\bullet.png");
   persData->backgroundTexture = persData->ReturnTexture("assets\\background.png");
+  persData->barrierTexture = persData->ReturnTexture("assets\\blocksmall.png");
+
+
+
 
   world->setUpEnermies(4);
 

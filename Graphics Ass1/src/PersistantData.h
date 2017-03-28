@@ -73,7 +73,7 @@ public:
 	GLuint playerTexture;
 	GLuint bulletTexture;
 	GLuint backgroundTexture;
-
+	GLuint barrierTexture;
 	//window/render
 	SDL_Window *window = nullptr;
 	//SDL_Renderer *renderer = nullptr;
