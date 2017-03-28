@@ -96,6 +96,8 @@ int createWin(int w, int h, SDL_Window* &win)
 	return 0;
 }
 
+
+
 void input(MainWorld* &world,PersistantData* &persData,vec3 &colourValueGLMVector,bool &running)
 {
 	SDL_Event e;
@@ -216,7 +218,7 @@ void render(GLuint VAO, GLuint EBO,MainWorld* world,PersistantData* persData, ve
 	glBindVertexArray(VAO);
 	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, EBO);
 
-	
+
 
 	GLint viewLocation = glGetUniformLocation(shaderProgram, "viewMat");
 	GLint projectionLocation = glGetUniformLocation(shaderProgram, "projectionMat");
@@ -225,6 +227,10 @@ void render(GLuint VAO, GLuint EBO,MainWorld* world,PersistantData* persData, ve
 
 	glUniformMatrix4fv(viewLocation, 1, GL_FALSE, glm::value_ptr(viewMatrix));
 	glUniformMatrix4fv(projectionLocation, 1, GL_FALSE, glm::value_ptr(projectionMatrix));
+
+
+
+
 
 
 
@@ -297,14 +303,45 @@ void render(GLuint VAO, GLuint EBO,MainWorld* world,PersistantData* persData, ve
 	}
 	
 
+	for (const auto &blockade : world->barriers)
+	{
+
+		if (blockade.dead == false)
+		{
+
+			glBindTexture(GL_TEXTURE_2D, persData->bulletTexture);//binds texture
+			GLint modelLocation2 = glGetUniformLocation(shaderProgram, "modelMat");
+
+			glUniformMatrix4fv(modelLocation2, 1, GL_FALSE, glm::value_ptr(blockade.modelMatrix*blockade.rotationMatrix));
+			glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
+		}
+	}
 
 
 	SDL_Color color;
 	color.r = 255;
+	color.b = 255;
+	color.g = 255;
 
-	SDL_Surface *texSurf = TTF_RenderUTF8_Blended(persData->font, "My first Text!", color); //< Doesn't work
 
-	float X = 2.0f, Y = 1.5f, Z = 0.0f;
+	string lives = "Lives: " + to_string(world->player.health);
+	if (persData->gameOver == true)
+	{
+		lives = "GAME OVER!!!";
+
+	}
+	else if (persData-> gameWon == true)
+	{
+		lives = "You Win!";
+
+	}
+	SDL_Surface *texSurf = TTF_RenderUTF8_Blended(persData->font,lives.c_str(), color); //< Doesn't work
+
+	//float X = 2.0f, Y = 1.5f, Z = 0.0f;
+
+//	int w = power_two_floor(texSurf->w) * 2;
+	//int h = power_two_floor(texSurf->h) * 2;
+
 
 	GLuint fontTexture;
 	glGenTextures(1, &fontTexture);
@@ -316,7 +353,12 @@ void render(GLuint VAO, GLuint EBO,MainWorld* world,PersistantData* persData, ve
 	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, texSurf->w, texSurf->h, 0, GL_BGRA, GL_UNSIGNED_BYTE, texSurf->pixels);
 
 
-  
+	glBindTexture(GL_TEXTURE_2D, fontTexture);//binds texture
+	GLint modelLocationFont = glGetUniformLocation(shaderProgram, "modelMat");
+	glUniformMatrix4fv(modelLocationFont, 1, GL_FALSE, glm::value_ptr(world->LivesText.modelMatrix*world->LivesText.rotationMatrix));
+	glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
+
+
   
 	glDeleteTextures(1, &fontTexture);
 
@@ -348,7 +390,7 @@ void update(MainWorld* &world, PersistantData* &persData, chrono::duration<doubl
 		persData->windowResized = false;
 	}
 
-	if (persData->gameOver == false)
+	if (persData->gameOver == false && persData->gameWon == false)
 	{
 
 		float playerMoveSpeed = 4.0* t.count();
@@ -375,17 +417,19 @@ void update(MainWorld* &world, PersistantData* &persData, chrono::duration<doubl
 
 			}
 
-			if (world->playerFire == true && world->player.lastShot < chrono::high_resolution_clock::now())
+			if (world->playerFire == true && world->player.lastShot <= chrono::high_resolution_clock::now())
 			{
 
 				world->player.createBullet(world->bullets, 1.0f);
 				world->player.lastShot += chrono::milliseconds(world->player.cooldownValue);
+
 
 			}
 			world->playerFire = false;
 
 
 		}
+		
 
 		float rotate = 0.1f *t.count();
 
@@ -440,12 +484,15 @@ void update(MainWorld* &world, PersistantData* &persData, chrono::duration<doubl
 
 		int nSDelay = 1;
 		//update each enermy sprite position here  
+		persData->gameWon = true;
+
 		for (auto &enermy : world->enermieSp)
 		{
 
 			if (enermy.dead == false)
 			{
 				//if the enermy should drop down
+				persData->gameWon = false;
 				if (dropDown == true)
 				{
 					float mobMoveSpeedTmp;
@@ -497,7 +544,7 @@ void update(MainWorld* &world, PersistantData* &persData, chrono::duration<doubl
 				}
 
 
-
+			//	enermy.rotationMatrix = glm::rotate(enermy.rotationMatrix, glm::radians(0.8f), glm::vec3(0.0f, 0.0f, 1.0f));
 
 				srand(time(NULL));
 				int rng = rand() % 3 + 1;
@@ -512,8 +559,7 @@ void update(MainWorld* &world, PersistantData* &persData, chrono::duration<doubl
 
 				nSDelay++;
 
-				vector<int>deleteLoc;
-				int i = 0;
+				
 				for (auto &bullet : world->bullets)
 				{
 					if (bullet.dead == false)
@@ -532,17 +578,16 @@ void update(MainWorld* &world, PersistantData* &persData, chrono::duration<doubl
 								world->player.points += 1;
 								cout << "Player Points: " << world->player.points <<endl;
 								enermy.dead = true;
-								deleteLoc.push_back(i);
+								
 							}
 						}
-						i++;
+						
 					}
 				}
 
 
-
-				//
 			}
+			
 
 		}
 
@@ -580,7 +625,93 @@ void update(MainWorld* &world, PersistantData* &persData, chrono::duration<doubl
 		}
 
 
+		for (auto &blockade : world->barriers)
+		{
+			if (blockade.dead == false)
+			{
 
+				for (auto &bullet : world->bullets)
+				{
+					if (bullet.dead == false)
+					{
+
+						if (blockade.checkcollision(bullet.modelMatrix[3].x, bullet.modelMatrix[3].y, bullet.sizeH, bullet.sizeH) == true)
+						{
+
+							//cout << "Collision Happened with bullet and mob" << endl;
+
+							bullet.dead = true;
+
+							blockade.health -= 1;
+							if (blockade.health <= 0)
+							{
+								blockade.dead = true;
+
+							}
+						}
+
+					}
+				}
+
+				for (auto &bullet : world->enermieBullets)
+				{
+					if (bullet.dead == false)
+					{
+
+						if (blockade.checkcollision(bullet.modelMatrix[3].x, bullet.modelMatrix[3].y, bullet.sizeH, bullet.sizeH) == true)
+						{
+
+							//cout << "Collision Happened with bullet and mob" << endl;
+
+							bullet.dead = true;
+
+							blockade.health -= 1;
+							if (blockade.health <= 0)
+							{
+								blockade.dead = true;
+
+							}
+						}
+
+					}
+				}
+			}
+		}
+
+		//delete the dead bullets
+
+		//look at maby capping a fixed size and reusing entries rather than endlessly adding then removeing which cases an entire reshuffle
+		for (auto i = std::begin(world->bullets); i != std::end(world->bullets);)
+		{
+
+			if ((*i).dead == true)
+			{
+
+				i = world->bullets.erase(i);
+			}
+			else
+			{
+				++i;
+			}
+
+
+		}
+
+		for (auto i = std::begin(world->enermieBullets); i != std::end(world->enermieBullets);)
+		{
+
+			if ((*i).dead == true)
+			{
+
+				i = world->enermieBullets.erase(i);
+			}
+			else
+			{
+				++i;
+			}
+
+
+		}
 
 
 		//reset dropdown
@@ -594,8 +725,13 @@ void update(MainWorld* &world, PersistantData* &persData, chrono::duration<doubl
 	}
 	else
 	{
+		if (persData->jusEnded == true)
+		{
+			world->LivesText.modelMatrix = glm::translate(world->LivesText.modelMatrix, glm::vec3(5.0f, -1.0f, 0.0f));
+			world->LivesText.modelMatrix = glm::scale(world->LivesText.modelMatrix, glm::vec3(2.0f));
 
-
+			persData->jusEnded = false;
+		}
 	}
 }
 
@@ -862,7 +998,7 @@ int main(int argc, char *argv[]) {
 #pragma endregion
 
   
-  persData->loadfont("assets\\Demo_ConeriaScript.ttf");
+  persData->loadfont("assets\\cour.ttf");
 
 
   MainWorld* world = new MainWorld();
@@ -873,12 +1009,27 @@ int main(int argc, char *argv[]) {
  world->player.modelMatrix = glm::translate(world->player.modelMatrix, glm::vec3(0.0f, -1.3f, 0.0f));
  world->player.modelMatrix = glm::scale(world->player.modelMatrix, glm::vec3(world->player.sizeH));
  world->player.health = 3;
+// world->player.cooldownValue = 500;
 
  world->background = Sprite();
  world->background.modelMatrix = glm::translate(world->background.modelMatrix, glm::vec3(2.8f, -2.5f, 0.0f));
  world->background.modelMatrix = glm::scale(world->background.modelMatrix, glm::vec3(5.5f));
  
  // world->background.rotationMatrix = glm::rotate(world->background.rotationMatrix, glm::radians(90.0f), glm::vec3(0.0f, 0.0f, 1.0f));
+
+ for (float i=-2; i< 3;)
+ {
+	 Sprite TempBarrier;
+	 TempBarrier.health = 3;
+	 TempBarrier.modelMatrix = glm::translate(TempBarrier.modelMatrix, glm::vec3(i, -1.0f, 0.0f));
+	 TempBarrier.modelMatrix = glm::scale(TempBarrier.modelMatrix, glm::vec3(0.2f));
+	 TempBarrier.sizeH = 0.2f;
+	 world->barriers.push_back(TempBarrier);
+	 i += 0.5f;
+ }
+
+
+
 
   persData->playerTexture = persData->ReturnTexture("assets\\player.png");
   persData->enermieTexture = persData->ReturnTexture("assets\\enermy2.png");
@@ -887,6 +1038,8 @@ int main(int argc, char *argv[]) {
 
   world->setUpEnermies(4);
 
+  world->LivesText.modelMatrix = glm::translate(world->LivesText.modelMatrix, glm::vec3(-1.5f, 0.2f, 0.0f));
+  world->LivesText.modelMatrix = glm::scale(world->LivesText.modelMatrix, glm::vec3(0.4f));
 
   glm::mat4 viewMatrix;
 

@@ -38,10 +38,14 @@ public:
 	vector<Sprite> enermieSp;
 	vector<Sprite> bullets;
 	vector<Sprite> enermieBullets;
+	vector<Sprite> barriers;
+
 	Sprite background;
 
 	Sprite player;
 	
+
+	Sprite LivesText;
 
 
 

@@ -32,7 +32,7 @@ public:
 	bool checkcollision(const float otherX, const float otherY,  float otherWidth,  float otherHeight);
 	void createBullet(vector<Sprite> &list, float direction);
 	
-	float health;
+	int health;
 	
 	float sizeH;
 	

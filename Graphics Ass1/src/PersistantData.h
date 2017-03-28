@@ -38,6 +38,8 @@ public:
 	bool resartGame;
 	
 	bool gameOver = false;
+	bool jusEnded = true;
+	bool gameWon = false;
 
 	TTF_Font *font;
 	

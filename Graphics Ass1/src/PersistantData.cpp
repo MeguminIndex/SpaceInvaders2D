@@ -14,7 +14,7 @@ PersistantData::PersistantData()
 void PersistantData::loadfont(string path)
 {
 
-	font = TTF_OpenFont(path.c_str(),20);
+	font = TTF_OpenFont(path.c_str(),50);
 
 
 }
