@@ -210,9 +210,6 @@ void render(GLuint VAO, GLuint EBO,MainWorld* world,PersistantData* persData, ve
 	glClearColor(colourValueGLMVector.r, colourValueGLMVector.g, colourValueGLMVector.b, 1.0f);
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-
-
-
 	// render
 	glUseProgram(shaderProgram);
 	glBindVertexArray(VAO);
@@ -227,12 +224,6 @@ void render(GLuint VAO, GLuint EBO,MainWorld* world,PersistantData* persData, ve
 
 	glUniformMatrix4fv(viewLocation, 1, GL_FALSE, glm::value_ptr(viewMatrix));
 	glUniformMatrix4fv(projectionLocation, 1, GL_FALSE, glm::value_ptr(projectionMatrix));
-
-
-
-
-
-
 
 	glBindTexture(GL_TEXTURE_2D, persData->backgroundTexture);//binds texture
 	GLint modelLocation = glGetUniformLocation(shaderProgram, "modelMat");
@@ -263,7 +254,7 @@ void render(GLuint VAO, GLuint EBO,MainWorld* world,PersistantData* persData, ve
 
 	for (const auto &enermy : world->enermieSp)
 	{
-		if (enermy.dead == false)
+		if (enermy.render == true)
 		{
 			glBindTexture(GL_TEXTURE_2D, persData->enermieTexture);//binds texture
 			GLint modelLocation2 = glGetUniformLocation(shaderProgram, "modelMat");
@@ -309,7 +300,14 @@ void render(GLuint VAO, GLuint EBO,MainWorld* world,PersistantData* persData, ve
 		if (blockade.dead == false)
 		{
 
+
+			if(blockade.health >= 3)
 			glBindTexture(GL_TEXTURE_2D, persData->barrierTexture);//binds texture
+			else if(blockade.health == 2)
+			glBindTexture(GL_TEXTURE_2D, persData->barrierTexture2);//binds texture
+			else
+			glBindTexture(GL_TEXTURE_2D, persData->barrierTexture3);//binds texture
+
 			GLint modelLocation2 = glGetUniformLocation(shaderProgram, "modelMat");
 
 			glUniformMatrix4fv(modelLocation2, 1, GL_FALSE, glm::value_ptr(blockade.modelMatrix*blockade.rotationMatrix));
@@ -324,13 +322,20 @@ void render(GLuint VAO, GLuint EBO,MainWorld* world,PersistantData* persData, ve
 		}
 	}
 
+	glBindTexture(GL_TEXTURE_2D, persData->boundryTexture);//binds texture
+	GLint boundryModelLocation = glGetUniformLocation(shaderProgram, "modelMat");
+
+	glUniformMatrix4fv(boundryModelLocation, 1, GL_FALSE, glm::value_ptr(world->sideWall.modelMatrix*world->sideWall.rotationMatrix));
+	glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
+
+
+
+#pragma region text Rendering
 
 	SDL_Color color;
 	color.r = 255;
 	color.b = 255;
 	color.g = 255;
-
-
 	string lives = "Lives: " + to_string(world->player.health);
 	if (persData->gameOver == true)
 	{
@@ -343,13 +348,6 @@ void render(GLuint VAO, GLuint EBO,MainWorld* world,PersistantData* persData, ve
 
 	}
 	SDL_Surface *texSurf = TTF_RenderUTF8_Blended(persData->font,lives.c_str(), color); //< Doesn't work
-
-	//float X = 2.0f, Y = 1.5f, Z = 0.0f;
-
-//	int w = power_two_floor(texSurf->w) * 2;
-	//int h = power_two_floor(texSurf->h) * 2;
-
-
 	GLuint fontTexture;
 	glGenTextures(1, &fontTexture);
 	glBindTexture(GL_TEXTURE_2D, fontTexture);
@@ -369,12 +367,27 @@ void render(GLuint VAO, GLuint EBO,MainWorld* world,PersistantData* persData, ve
   
 	glDeleteTextures(1, &fontTexture);
 
+	//score text
+	string score ="Score: " + to_string(world->player.points);
+
+	texSurf = TTF_RenderUTF8_Blended(persData->font, score.c_str(), color);
+	glGenTextures(1, &fontTexture);
+	glBindTexture(GL_TEXTURE_2D, fontTexture);
+
+	glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+	glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+
+	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, texSurf->w, texSurf->h, 0, GL_BGRA, GL_UNSIGNED_BYTE, texSurf->pixels);
+	glBindTexture(GL_TEXTURE_2D, fontTexture);//binds texture
+	GLint modelLocationScore = glGetUniformLocation(shaderProgram, "modelMat");
+	glUniformMatrix4fv(modelLocationFont, 1, GL_FALSE, glm::value_ptr(world->scoreText.modelMatrix*world->scoreText.rotationMatrix));
+	glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
 
 
 	SDL_FreeSurface(texSurf);
 
 
-
+#pragma endregion
 
 
 	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
@@ -482,6 +495,7 @@ void update(MainWorld* &world, PersistantData* &persData, chrono::duration<doubl
 
 
 			}
+		
 		}
 
 
@@ -585,7 +599,7 @@ void update(MainWorld* &world, PersistantData* &persData, chrono::duration<doubl
 								world->player.points += 1;
 								cout << "Player Points: " << world->player.points <<endl;
 								enermy.dead = true;
-								
+								enermy.deathTime = chrono::high_resolution_clock::now() + chrono::milliseconds(3000);
 							}
 						}
 						
@@ -593,6 +607,14 @@ void update(MainWorld* &world, PersistantData* &persData, chrono::duration<doubl
 				}
 
 
+			}
+			else if(enermy.deathTime >= chrono::high_resolution_clock::now())
+			{
+				enermy.rotationMatrix = glm::rotate(enermy.rotationMatrix, glm::radians(2.0f), glm::vec3(0.0f, 0.0f, 1.0f));
+			}
+			else
+			{
+				enermy.render = false;
 			}
 			
 
@@ -1015,7 +1037,7 @@ int main(int argc, char *argv[]) {
 
   MainWorld* world = new MainWorld();
 
-  
+  //player
  world->player = Sprite();
  world->player.sizeH = 0.2f;
  world->player.modelMatrix = glm::translate(world->player.modelMatrix, glm::vec3(0.0f, -1.3f, 0.0f));
@@ -1023,12 +1045,13 @@ int main(int argc, char *argv[]) {
  world->player.health = 3;
 // world->player.cooldownValue = 500;
 
+//background
  world->background = Sprite();
  world->background.modelMatrix = glm::translate(world->background.modelMatrix, glm::vec3(2.8f, -2.5f, 0.0f));
  world->background.modelMatrix = glm::scale(world->background.modelMatrix, glm::vec3(5.5f));
  
  // world->background.rotationMatrix = glm::rotate(world->background.rotationMatrix, glm::radians(90.0f), glm::vec3(0.0f, 0.0f, 1.0f));
-
+ //barriers
  for (float i=-2; i< 3;)
  {
 	 Sprite TempBarrier;
@@ -1040,6 +1063,12 @@ int main(int argc, char *argv[]) {
 	 i += 0.5f;
  }
 
+ //side walls
+ 
+
+ world->sideWall.modelMatrix = glm::translate(world->sideWall.modelMatrix, glm::vec3(2.36f, -1.6f, 0.0f));
+
+ world->sideWall.modelMatrix = glm::scale(world->sideWall.modelMatrix, glm::vec3(4.85f, 3.43f, 1.0f));
 
 
 
@@ -1048,7 +1077,10 @@ int main(int argc, char *argv[]) {
   persData->bulletTexture = persData->ReturnTexture("assets\\bullet.png");
   persData->backgroundTexture = persData->ReturnTexture("assets\\background.png");
   persData->barrierTexture = persData->ReturnTexture("assets\\blocksmall.png");
+  persData->barrierTexture2 = persData->ReturnTexture("assets\\blocksmall2.png");
+  persData->barrierTexture3 = persData->ReturnTexture("assets\\blocksmall3.png");
 
+  persData->boundryTexture = persData->ReturnTexture("assets\\boundry.png");
 
 
 
@@ -1057,6 +1089,8 @@ int main(int argc, char *argv[]) {
   world->LivesText.modelMatrix = glm::translate(world->LivesText.modelMatrix, glm::vec3(-1.5f, 0.2f, 0.0f));
   world->LivesText.modelMatrix = glm::scale(world->LivesText.modelMatrix, glm::vec3(0.4f));
 
+  world->scoreText.modelMatrix = glm::translate(world->scoreText.modelMatrix, glm::vec3(-1.5f, 0.6f, 0.0f));
+  world->scoreText.modelMatrix = glm::scale(world->scoreText.modelMatrix, glm::vec3(0.4f));
   glm::mat4 viewMatrix;
 
   glm::mat4 projectionMatrix;

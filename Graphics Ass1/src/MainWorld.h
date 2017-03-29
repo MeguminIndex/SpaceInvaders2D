@@ -40,13 +40,15 @@ public:
 	vector<Sprite> enermieBullets;
 	vector<Sprite> barriers;
 
+	Sprite sideWall;
+
 	Sprite background;
 
 	Sprite player;
 	
 
 	Sprite LivesText;
-
+	Sprite scoreText;
 
 
 

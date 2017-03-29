@@ -10,8 +10,8 @@ MainWorld::MainWorld()
 {
 	SDL_LogDebug(SDL_LOG_PRIORITY_DEBUG, "MainWorld Constructed");
 
-	bullets.reserve(50);
-	enermieBullets.reserve(50);
+	bullets.reserve(10);
+	enermieBullets.reserve(10);
 
 }
 

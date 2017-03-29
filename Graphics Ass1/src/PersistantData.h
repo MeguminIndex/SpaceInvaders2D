@@ -74,6 +74,10 @@ public:
 	GLuint bulletTexture;
 	GLuint backgroundTexture;
 	GLuint barrierTexture;
+	GLuint barrierTexture2;
+	GLuint barrierTexture3;
+
+	GLuint boundryTexture;
 	//window/render
 	SDL_Window *window = nullptr;
 	//SDL_Renderer *renderer = nullptr;

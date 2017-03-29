@@ -32,6 +32,8 @@ public:
 	bool checkcollision(const float otherX, const float otherY,  float otherWidth,  float otherHeight);
 	void createBullet(vector<Sprite> &list, float direction);
 	
+	bool render=true;
+
 	int health;
 	
 	float sizeH;
@@ -49,6 +51,7 @@ public:
 
 	chrono::high_resolution_clock::time_point lastShot = chrono::high_resolution_clock::now();
 
+	chrono::high_resolution_clock::time_point deathTime;
 
 	movementInput direction = movementInput::None;
 };
